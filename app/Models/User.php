@@ -50,6 +50,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'whatsapp_verified' => 'boolean',
             'whatsapp_verified_at' => 'datetime',
             'last_whatsapp_interaction' => 'datetime',
+            'role' => \App\Enums\UserRole::class,
         ];
     }
 

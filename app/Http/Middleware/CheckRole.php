@@ -19,7 +19,9 @@ class CheckRole
             return redirect()->route('login');
         }
 
-        if (in_array(auth()->user()->role, $roles)) {
+        $userRole = auth()->user()->role;
+
+        if ($userRole instanceof \App\Enums\UserRole && in_array($userRole->value, $roles)) {
             return $next($request);
         }
 

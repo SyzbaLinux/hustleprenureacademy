@@ -19,11 +19,8 @@ class RedirectDashboardByRole
         if ($request->path() === 'dashboard') {
             $user = $request->user();
 
-            if ($user && $user->role) {
-                $userRole = UserRole::tryFrom($user->role);
-                if ($userRole) {
-                    return redirect($userRole->redirectPath());
-                }
+            if ($user && $user->role instanceof \App\Enums\UserRole) {
+                return redirect($user->role->redirectPath());
             }
         }
 
