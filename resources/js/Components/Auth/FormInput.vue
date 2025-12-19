@@ -2,7 +2,7 @@
   <div class="mb-6">
     <label :for="id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
       <span v-if="icon" class="inline-block mr-2">
-        <i :class="`fas ${icon} text-emerald-600 dark:text-emerald-400`"></i>
+        <i :class="`fas ${icon} text-[#b30d4f] dark:text-[#b30d4f]`"></i>
       </span>
       {{ label }}
       <span v-if="required" class="text-red-500">*</span>

@@ -2,11 +2,11 @@
   <AdminLayout>
     <div class="space-y-6">
       <!-- Welcome Section -->
-      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 rounded-xl shadow-lg p-6 sm:p-8 text-white">
+      <div class="bg-gradient-to-r from-[#b30d4f] to-[#8b0a3d] dark:from-[#e0156b] dark:to-[#b30d4f] rounded-xl shadow-lg p-6 sm:p-8 text-white">
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-3xl sm:text-4xl font-bold">Admin Panel</h1>
-            <p class="text-indigo-50 mt-2">Welcome, {{ user.name }}</p>
+            <p class="text-pink-50 mt-2">Welcome, {{ user.name }}</p>
           </div>
           <div class="hidden sm:block text-5xl">
             <i class="fas fa-crown opacity-20"></i>

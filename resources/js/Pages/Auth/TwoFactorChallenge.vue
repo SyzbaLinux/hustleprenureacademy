@@ -63,7 +63,7 @@
         <button
           type="button"
           @click="recovery = !recovery"
-          class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium transition-colors"
+          class="text-[#b30d4f] dark:text-[#e0156b] hover:text-[#8b0a3d] dark:hover:text-[#b30d4f] font-medium transition-colors"
         >
           <i :class="`fas ${recovery ? 'fa-key' : 'fa-shield-check'} mr-1`"></i>
           {{ recovery ? 'Use code instead' : 'Use recovery code' }}
@@ -74,7 +74,7 @@
       <div class="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
         <Link
           :href="route('login')"
-          class="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+          class="font-medium text-[#b30d4f] dark:text-[#e0156b] hover:text-[#8b0a3d] dark:hover:text-[#b30d4f] transition-colors"
         >
           Sign In
         </Link>

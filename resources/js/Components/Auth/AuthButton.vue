@@ -9,7 +9,7 @@
 
       // Variant styles
       variant === 'primary'
-        ? 'bg-gradient-to-r from-emerald-600 to-green-600 dark:from-emerald-500 dark:to-green-500 hover:shadow-lg hover:scale-105 focus:ring-emerald-500 dark:focus:ring-emerald-400'
+        ? 'bg-gradient-to-r from-[#b30d4f] to-[#8b0a3d] dark:from-[#e0156b] dark:to-[#b30d4f] hover:shadow-lg hover:scale-105 focus:ring-[#b30d4f] dark:focus:ring-[#e0156b]'
         : variant === 'secondary'
         ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 focus:ring-gray-400'
         : 'bg-red-600 dark:bg-red-500 hover:shadow-lg hover:scale-105 focus:ring-red-500 dark:focus:ring-red-400',

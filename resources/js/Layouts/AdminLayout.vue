@@ -16,13 +16,12 @@
     >
       <!-- Logo -->
       <div class="h-16 flex items-center justify-between px-6 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
-        <Link :href="route('welcome')" class="flex items-center gap-2 group">
-          <div class="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center shadow-lg">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
+        <Link :href="route('welcome')" class="flex items-center gap-3 group">
+          <img src="/logo.png" alt="Hustleprenuer Network" class="h-10 w-auto" />
+          <div class="flex flex-col">
+            <span class="text-base font-bold text-gray-900 dark:text-white leading-tight">Hustleprenuer</span>
+            <span class="text-xs text-gray-600 dark:text-gray-400 leading-tight">Network</span>
           </div>
-          <span class="text-lg font-bold text-gray-900 dark:text-white">ErrandRunner</span>
         </Link>
         <button
           @click="sidebarOpen = false"
@@ -44,55 +43,87 @@
           Dashboard
         </NavLink>
 
-        <!-- Admin Navigation Section -->
-        <div class="pt-2">
-          <p class="px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Administration</p>
+        <!-- Content Management Section -->
+        <div class="pt-4">
+          <p class="px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">Content Management</p>
           <NavLink
-            href="#"
-            icon="fa-users"
-            class="mt-1 text-sm"
+            :href="route('admin.events.index')"
+            :active="route().current('admin.events.*')"
+            icon="fa-calendar-alt"
+            class="text-sm"
           >
-            Users Management
+            Events & Courses
+          </NavLink>
+          <NavLink
+            :href="route('admin.categories.index')"
+            :active="route().current('admin.categories.*')"
+            icon="fa-folder"
+            class="text-sm"
+          >
+            Categories
+          </NavLink>
+          <NavLink
+            :href="route('admin.instructors.index')"
+            :active="route().current('admin.instructors.*')"
+            icon="fa-chalkboard-teacher"
+            class="text-sm"
+          >
+            Instructors
+          </NavLink>
+        </div>
+
+        <!-- Enrollments & Payments Section -->
+        <div class="pt-4">
+          <p class="px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">Enrollments</p>
+          <NavLink
+            :href="route('admin.enrollments.index')"
+            :active="route().current('admin.enrollments.*')"
+            icon="fa-user-graduate"
+            class="text-sm"
+          >
+            All Enrollments
+          </NavLink>
+          <NavLink
+            :href="route('admin.payments.index')"
+            :active="route().current('admin.payments.*')"
+            icon="fa-credit-card"
+            class="text-sm"
+          >
+            Payments
           </NavLink>
           <NavLink
             href="#"
-            icon="fa-sliders-h"
+            icon="fa-bell"
+            class="text-sm opacity-60 cursor-not-allowed"
+          >
+            Reminders
+          </NavLink>
+        </div>
+
+        <!-- Administration Section -->
+        <div class="pt-4">
+          <p class="px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">Administration</p>
+          <NavLink
+            :href="route('admin.users.index')"
+            :active="route().current('admin.users.*')"
+            icon="fa-users"
             class="text-sm"
           >
-            Settings
+            Users
           </NavLink>
           <NavLink
             href="#"
             icon="fa-chart-bar"
-            class="text-sm"
+            class="text-sm opacity-60 cursor-not-allowed"
           >
             Reports
           </NavLink>
           <NavLink
             href="#"
             icon="fa-cogs"
-            class="text-sm"
+            class="text-sm opacity-60 cursor-not-allowed"
           >
-            System Configuration
-          </NavLink>
-        </div>
-
-        <!-- Analytics Section -->
-        <div class="pt-2">
-          <p class="px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Analytics</p>
-          <NavLink
-            href="#"
-            icon="fa-graph"
-            class="mt-1 text-sm"
-          >
-            Statistics
-          </NavLink>
-          <NavLink
-            href="#"
-            icon="fa-file-pdf"
-            class="text-sm"
-          >
-            Export Reports
+            Settings
           </NavLink>
         </div>
       </nav>
@@ -104,7 +135,7 @@
           class="w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
         >
           <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-xs font-semibold">
+            <div class="w-7 h-7 rounded-full bg-gradient-to-br from-[#b30d4f] to-[#8b0a3d] flex items-center justify-center text-white text-xs font-semibold">
               {{ user.name.charAt(0).toUpperCase() }}
             </div>
             <div class="text-left min-w-0">
@@ -156,7 +187,7 @@
         <!-- Top Right Actions -->
         <div class="flex items-center gap-4">
           <!-- Admin Badge -->
-          <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-semibold rounded-full flex items-center gap-1">
+          <span class="px-3 py-1 bg-[#b30d4f]/10 dark:bg-[#b30d4f]/20 text-[#b30d4f] dark:text-[#e0156b] text-xs font-semibold rounded-full flex items-center gap-1">
             <i class="fas fa-shield-alt"></i>
             Admin
           </span>

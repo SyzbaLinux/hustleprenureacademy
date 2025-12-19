@@ -6,7 +6,7 @@
         <button
           @click="authMethod = 'password'"
           :class="{
-            'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm': authMethod === 'password',
+            'bg-white dark:bg-slate-800 text-[#b30d4f] dark:text-[#e0156b] shadow-sm': authMethod === 'password',
             'text-slate-600 dark:text-slate-400': authMethod !== 'password',
           }"
           class="flex-1 py-2 px-4 rounded-md font-medium transition-colors"
@@ -17,7 +17,7 @@
         <button
           @click="authMethod = 'otp'"
           :class="{
-            'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm': authMethod === 'otp',
+            'bg-white dark:bg-slate-800 text-[#b30d4f] dark:text-[#e0156b] shadow-sm': authMethod === 'otp',
             'text-slate-600 dark:text-slate-400': authMethod !== 'otp',
           }"
           class="flex-1 py-2 px-4 rounded-md font-medium transition-colors"
@@ -75,8 +75,8 @@
       <!-- OTP Method -->
       <form v-else @submit.prevent="submitOTP" class="space-y-4">
         <!-- WhatsApp Info -->
-        <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
-          <p class="text-emerald-700 dark:text-emerald-300 text-sm flex items-start gap-2">
+        <div class="bg-pink-50 dark:bg-[#b30d4f]/20 border border-pink-200 dark:border-[#b30d4f]/50 rounded-lg p-4">
+          <p class="text-[#8b0a3d] dark:text-[#e0156b] text-sm flex items-start gap-2">
             <i class="fas fa-whatsapp mt-0.5 flex-shrink-0"></i>
             <span>We'll send your login code via WhatsApp. Make sure your phone number is registered with WhatsApp.</span>
           </p>
@@ -109,7 +109,7 @@
         <div v-if="canResetPassword && authMethod === 'password'">
           <Link
             :href="route('password.request')"
-            class="block font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+            class="block font-medium text-[#b30d4f] dark:text-[#e0156b] hover:text-[#8b0a3d] dark:hover:text-[#b30d4f] transition-colors"
           >
             Forgot password?
           </Link>
@@ -119,7 +119,7 @@
           No account?
           <Link
             :href="route('register')"
-            class="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+            class="font-medium text-[#b30d4f] dark:text-[#e0156b] hover:text-[#8b0a3d] dark:hover:text-[#b30d4f] transition-colors"
           >
             Sign up
           </Link>

@@ -6,8 +6,8 @@
     >
       <form @submit.prevent="submitForgotPassword" class="space-y-4">
         <!-- Info message -->
-        <div v-if="status" class="p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg">
-          <p class="text-sm text-emerald-700 dark:text-emerald-300 flex items-start gap-2">
+        <div v-if="status" class="p-4 bg-pink-50 dark:bg-[#b30d4f]/30 border border-pink-200 dark:border-[#b30d4f]/50 rounded-lg">
+          <p class="text-sm text-[#8b0a3d] dark:text-[#b30d4f] flex items-start gap-2">
             <i class="fas fa-check-circle mt-0.5 flex-shrink-0"></i>
             <span>{{ status }}</span>
           </p>
@@ -41,7 +41,7 @@
         Remember your password?
         <Link
           :href="route('login')"
-          class="font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+          class="font-medium text-[#b30d4f] dark:text-[#e0156b] hover:text-[#8b0a3d] dark:hover:text-[#b30d4f] transition-colors"
         >
           Sign in
         </Link>

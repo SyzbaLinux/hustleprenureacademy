@@ -9,6 +9,7 @@ class Category extends Model
     protected $fillable = [
         'name',
         'slug',
+        'type',
         'description',
         'icon',
         'is_active',
@@ -18,6 +19,10 @@ class Category extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'display_order' => 'integer',
+    ];
+
+    protected $attributes = [
+        'icon' => 'fas fa-folder',
     ];
 
     /**
@@ -42,5 +47,21 @@ class Category extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('display_order');
+    }
+
+    /**
+     * Scope categories for events
+     */
+    public function scopeForEvents($query)
+    {
+        return $query->where('type', 'event');
+    }
+
+    /**
+     * Scope categories for courses
+     */
+    public function scopeForCourses($query)
+    {
+        return $query->where('type', 'course');
     }
 }

@@ -1,9 +1,9 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50 to-green-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col">
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-pink-50 to-rose-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col">
     <!-- Animated background elements -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
-      <div class="absolute -top-40 -right-40 w-80 h-80 bg-emerald-200 dark:bg-emerald-900/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-      <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-green-200 dark:bg-green-900/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style="animation-delay: 2s;"></div>
+      <div class="absolute -top-40 -right-40 w-80 h-80 bg-[#b30d4f]/10 dark:bg-[#b30d4f]/5 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+      <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-amber-200/50 dark:bg-amber-900/10 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style="animation-delay: 2s;"></div>
     </div>
 
     <!-- Navigation -->
@@ -11,20 +11,19 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <!-- Logo/Brand -->
-          <Link :href="route('welcome')" class="flex items-center gap-2 group">
-            <div class="w-10 h-10 bg-gradient-to-br from-emerald-600 to-green-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-              </svg>
+          <Link :href="route('welcome')" class="flex items-center gap-3 group">
+            <img src="/logo.png" alt="Hustleprenuer Network" class="h-12 w-auto group-hover:scale-105 transition-transform duration-300" />
+            <div class="hidden sm:flex flex-col">
+              <span class="text-lg font-bold bg-gradient-to-r from-[#b30d4f] to-[#8b0a3d] dark:from-[#e0156b] dark:to-[#b30d4f] bg-clip-text text-transparent leading-tight">Hustleprenuer</span>
+              <span class="text-xs text-gray-600 dark:text-gray-400 leading-tight">Network</span>
             </div>
-            <span class="hidden sm:block text-xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 dark:from-emerald-400 dark:to-green-400 bg-clip-text text-transparent">ErrandRunner</span>
           </Link>
 
           <!-- Desktop Navigation -->
           <div class="hidden md:flex items-center gap-8">
             <Link
               :href="route('welcome')"
-              class="text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors"
+              class="text-gray-700 dark:text-gray-300 hover:text-[#b30d4f] dark:hover:text-[#e0156b] font-medium transition-colors"
             >
               Home
             </Link>
@@ -32,13 +31,13 @@
             <div v-if="!user" class="flex items-center gap-4">
               <Link
                 :href="route('login')"
-                class="text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors"
+                class="text-gray-700 dark:text-gray-300 hover:text-[#b30d4f] dark:hover:text-[#e0156b] font-medium transition-colors"
               >
                 Sign In
               </Link>
               <Link
                 :href="route('register')"
-                class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-green-600 dark:from-emerald-500 dark:to-green-500 text-white font-semibold rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300"
+                class="px-4 py-2 bg-gradient-to-r from-[#b30d4f] to-[#8b0a3d] dark:from-[#e0156b] dark:to-[#b30d4f] text-white font-semibold rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300"
               >
                 Sign Up
               </Link>
@@ -47,7 +46,7 @@
             <div v-else class="flex items-center gap-4">
               <Link
                 :href="getDashboardRoute(user.role)"
-                class="text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors"
+                class="text-gray-700 dark:text-gray-300 hover:text-[#b30d4f] dark:hover:text-[#e0156b] font-medium transition-colors"
               >
                 Dashboard
               </Link>

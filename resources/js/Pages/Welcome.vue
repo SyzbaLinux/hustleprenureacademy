@@ -19,13 +19,13 @@ const getDashboardRoute = (role: string) => {
         </Head>
 
         <div
-            class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-emerald-50 to-green-50 p-6 text-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-slate-50"
+            class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-pink-50 to-rose-50 p-6 text-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-slate-50"
         >
             <!-- Animated background elements -->
             <div class="absolute inset-0 overflow-hidden opacity-30">
-                <div class="absolute -left-4 top-0 h-72 w-72 animate-pulse rounded-full bg-emerald-400 mix-blend-multiply blur-3xl filter dark:bg-emerald-600"></div>
-                <div class="animation-delay-2000 absolute -right-4 top-0 h-72 w-72 animate-pulse rounded-full bg-green-400 mix-blend-multiply blur-3xl filter dark:bg-green-600"></div>
-                <div class="animation-delay-4000 absolute -bottom-8 left-20 h-72 w-72 animate-pulse rounded-full bg-emerald-500 mix-blend-multiply blur-3xl filter dark:bg-emerald-700"></div>
+                <div class="absolute -left-4 top-0 h-72 w-72 animate-pulse rounded-full bg-[#b30d4f]/40 mix-blend-multiply blur-3xl filter dark:bg-[#b30d4f]/20"></div>
+                <div class="animation-delay-2000 absolute -right-4 top-0 h-72 w-72 animate-pulse rounded-full bg-amber-400/40 mix-blend-multiply blur-3xl filter dark:bg-amber-600/20"></div>
+                <div class="animation-delay-4000 absolute -bottom-8 left-20 h-72 w-72 animate-pulse rounded-full bg-[#e0156b]/40 mix-blend-multiply blur-3xl filter dark:bg-[#e0156b]/20"></div>
             </div>
 
             <!-- Main content -->
@@ -34,19 +34,19 @@ const getDashboardRoute = (role: string) => {
                     <!-- Logo with subtle animation -->
                     <div class="animate-fade-in-up">
                         <img
-                            src="/zblogo.png"
-                            alt="Cash Position & Requisition Management"
-                            class="mb-6 h-16 drop-shadow-lg transition-transform duration-300 hover:scale-105 lg:h-20"
+                            src="/logo.png"
+                            alt="Hustleprenuer Network"
+                            class="mb-6 h-20 drop-shadow-lg transition-transform duration-300 hover:scale-105 lg:h-24"
                         />
                     </div>
 
                     <!-- Heading with gradient text -->
                     <div class="animate-fade-in-up animation-delay-200 space-y-4">
-                        <h1 class="bg-gradient-to-r  from-slate-900 via-emerald-700 to-green-900 bg-clip-text text-4xl font-bold text-transparent dark:from-slate-100 dark:via-emerald-300 dark:to-green-300 lg:text-6xl">
-                            Queue Management Simplified
+                        <h1 class="bg-gradient-to-r from-slate-900 via-[#b30d4f] to-[#8b0a3d] bg-clip-text text-4xl font-bold text-transparent dark:from-slate-100 dark:via-[#e0156b] dark:to-[#b30d4f] lg:text-6xl">
+                            Empowering Entrepreneurs & Professionals
                         </h1>
                         <p class="mx-auto max-w-2xl text-lg text-slate-600 dark:text-slate-400 lg:text-xl">
-                            Real-time branch queue handling with ticket printing and audio announcements for a seamless banking experience.
+                            Join our community of hustlers, access world-class courses, attend exclusive events, and network with like-minded entrepreneurs.
                         </p>
                     </div>
 
@@ -55,24 +55,24 @@ const getDashboardRoute = (role: string) => {
                         <Link
                             v-if="$page.props.auth.user"
                             :href="getDashboardRoute($page.props.auth.user.role)"
-                            class="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 px-8 py-4 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl dark:from-emerald-500 dark:to-green-500"
+                            class="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#b30d4f] to-[#8b0a3d] px-8 py-4 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl dark:from-[#e0156b] dark:to-[#b30d4f]"
                         >
                             <span class="relative z-10">Go to Dashboard</span>
                             <svg class="relative z-10 h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                             </svg>
-                            <div class="absolute inset-0 -z-10 bg-gradient-to-r from-emerald-700 to-green-700 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                            <div class="absolute inset-0 -z-10 bg-gradient-to-r from-[#8b0a3d] to-[#b30d4f] opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
                         </Link>
                         <template v-else>
                             <Link
                                 :href="route('login')"
-                                class="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 px-8 py-4 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl dark:from-emerald-500 dark:to-green-500"
+                                class="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-[#b30d4f] to-[#8b0a3d] px-8 py-4 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl dark:from-[#e0156b] dark:to-[#b30d4f]"
                             >
                                 <span class="relative z-10">Get Started</span>
                                 <svg class="relative z-10 h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                 </svg>
-                                <div class="absolute inset-0 -z-10 bg-gradient-to-r from-emerald-700 to-green-700 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                                <div class="absolute inset-0 -z-10 bg-gradient-to-r from-[#8b0a3d] to-[#b30d4f] opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
                             </Link>
                         </template>
                     </div>

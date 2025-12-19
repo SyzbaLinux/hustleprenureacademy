@@ -9,17 +9,17 @@
 
 /* Core Project Colors */
 :root {
-    /* Primary color - Teal/Green */
-    --color-primary-light: #187250;
-    --color-primary-dark: #2DD68F;
+    /* Primary color - Burgundy/Maroon */
+    --color-primary-light: #b30d4f;
+    --color-primary-dark: #e0156b;
 
-    /* Secondary/Accent - Lime/Yellow */
-    --color-accent-light: #7DC01D;
-    --color-accent-dark: #9ADE3A;
+    /* Secondary/Accent - Gold/Amber */
+    --color-accent-light: #f59e0b;
+    --color-accent-dark: #fbbf24;
 
     /* Destructive - Red */
-    --color-destructive-light: #FF2F2F;
-    --color-destructive-dark: #EF4343;
+    --color-destructive-light: #dc2626;
+    --color-destructive-dark: #ef4444;
 }
 
 @theme inline {
