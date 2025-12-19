@@ -31,4 +31,13 @@ return [
         ],
     ],
 
+    'pesepay' => [
+        'int_key' => env('PESEPAY_INT_KEY'),
+        'ency_key' => env('PESEPAY_ENCY_KEY'),
+        'return_url' => env('APP_URL') . '/webhooks/pesepay/return',
+        'result_url' => env('APP_URL') . '/webhooks/pesepay/result',
+        'currency' => env('PESEPAY_CURRENCY', 'USD'),
+        'merchant_code' => env('PESEPAY_MERCHANT_CODE', 'PZW211'),
+    ],
+
 ];

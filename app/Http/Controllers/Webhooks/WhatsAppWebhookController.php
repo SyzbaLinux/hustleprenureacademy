@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Webhooks;
 
 use App\Http\Controllers\Controller;
 use App\Models\Otp;
+use App\Jobs\ProcessWhatsAppWebhook;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -35,12 +36,6 @@ class WhatsAppWebhookController extends Controller
         try {
             $data = $request->json()->all();
 
-            // Verify webhook signature
-            if (!$this->verifyWebhookSignature($request)) {
-                Log::warning('Invalid WhatsApp webhook signature');
-                return response('OK', 200); // Still return 200 to prevent retries
-            }
-
             // Handle status updates
             if ($this->isStatusUpdate($data)) {
                 return $this->handleStatusUpdate($data);
@@ -61,26 +56,6 @@ class WhatsAppWebhookController extends Controller
 
             return response('OK', 200);
         }
-    }
-
-    /**
-     * Verify webhook signature
-     */
-    private function verifyWebhookSignature(Request $request): bool
-    {
-        // Get the X-Hub-Signature header
-        $signature = $request->header('X-Hub-Signature-256');
-
-        if (!$signature) {
-            return false; // No signature means webhook security is off
-        }
-
-        $appSecret = env('GRAPH_API_TOKEN'); // In production, use a dedicated secret
-        $payload = $request->getContent();
-
-        $expectedSignature = 'sha256=' . hash_hmac('sha256', $payload, $appSecret);
-
-        return hash_equals($signature, $expectedSignature);
     }
 
     /**
@@ -147,7 +122,9 @@ class WhatsAppWebhookController extends Controller
                 'type' => $type,
             ]);
 
-            // Only process text messages
+            $isOTPMessage = false;
+
+            // Check if it's an OTP message (text with 6 digits)
             if ($type === 'text') {
                 $messageText = $message['text']['body'];
 
@@ -156,12 +133,25 @@ class WhatsAppWebhookController extends Controller
                     $otpCode = $matches[1];
 
                     // Try to verify the OTP
-                    $this->processOTPFromMessage($phoneNumber, $otpCode);
+                    if ($this->processOTPFromMessage($phoneNumber, $otpCode)) {
+                        $isOTPMessage = true;
+
+                        // Mark message as read
+                        $this->markMessageAsRead($messageId);
+                    }
                 }
             }
 
-            // Mark message as read (optional)
-            $this->markMessageAsRead($messageId);
+            // If not an OTP message, route to chatbot
+            if (!$isOTPMessage) {
+                // Queue webhook processing to avoid blocking response
+                ProcessWhatsAppWebhook::dispatch($data);
+
+                Log::info('WhatsApp message queued for chatbot processing', [
+                    'phone_number' => $phoneNumber,
+                    'message_id' => $messageId,
+                ]);
+            }
 
             return response('OK', 200);
 
@@ -176,8 +166,9 @@ class WhatsAppWebhookController extends Controller
 
     /**
      * Process OTP from WhatsApp message
+     * Returns true if OTP was successfully verified
      */
-    private function processOTPFromMessage(string $phoneNumber, string $otpCode)
+    private function processOTPFromMessage(string $phoneNumber, string $otpCode): bool
     {
         try {
             // Try to verify the OTP for 'login' type
@@ -191,13 +182,19 @@ class WhatsAppWebhookController extends Controller
 
                 // Optional: Send confirmation message
                 $this->sendConfirmationMessage($phoneNumber, 'Your identity has been verified! You can close this window.');
+
+                return true;
             }
+
+            return false;
 
         } catch (\Exception $e) {
             Log::error('Error processing OTP from WhatsApp message', [
                 'phone_number' => $phoneNumber,
                 'error' => $e->getMessage(),
             ]);
+
+            return false;
         }
     }
 

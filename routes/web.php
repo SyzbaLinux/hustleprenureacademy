@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\OTPVerificationController;
 use App\Http\Controllers\Webhooks\WhatsAppWebhookController;
+use App\Http\Controllers\Webhooks\PesePayWebhookController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -26,6 +27,12 @@ Route::middleware('guest')->group(function () {
 Route::withoutMiddleware('web')->group(function () {
     Route::get('/webhook', [WhatsAppWebhookController::class, 'verify']);
     Route::post('/webhook', [WhatsAppWebhookController::class, 'handle']);
+});
+
+// PesePay Webhooks (No middleware - public)
+Route::withoutMiddleware('web')->group(function () {
+    Route::get('/webhooks/pesepay/return', [PesePayWebhookController::class, 'handleReturn'])->name('pesepay.return');
+    Route::post('/webhooks/pesepay/result', [PesePayWebhookController::class, 'handleResult'])->name('pesepay.result');
 });
 
 require __DIR__.'/admin.php';

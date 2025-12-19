@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8f790e435ef3c78218c6f4a41ed1004f",
+    "content-hash": "043d7ba288c381f09dcaa28fce2407ad",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -742,6 +742,56 @@
                 }
             ],
             "time": "2025-03-06T22:45:56+00:00"
+        },
+        {
+            "name": "emmanuelsiziba/pesepay",
+            "version": "2.1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/SyzbaLinux/pesepay-php.git",
+                "reference": "fe42887cc139ffff79e98b852b1c0de026a18db1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/SyzbaLinux/pesepay-php/zipball/fe42887cc139ffff79e98b852b1c0de026a18db1",
+                "reference": "fe42887cc139ffff79e98b852b1c0de026a18db1",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.4|^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Emmanuelsiziba\\Payments\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Emmanuel Siziba",
+                    "email": "emmasiziba@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Pesepay online payment integration package for seamless payment processing.",
+            "homepage": "https://github.com/SyzbaLinux/pesepay-php",
+            "keywords": [
+                "emmanuel siziba",
+                "integration",
+                "payment",
+                "pesepay"
+            ],
+            "support": {
+                "source": "https://github.com/SyzbaLinux/pesepay-php/tree/2.1.1.0"
+            },
+            "time": "2025-02-02T12:54:16+00:00"
         },
         {
             "name": "evenement/evenement",

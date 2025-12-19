@@ -22,6 +22,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
+        'phone_number',
+        'whatsapp_verified',
+        'preferred_language',
     ];
 
     /**
@@ -44,6 +47,33 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'whatsapp_verified' => 'boolean',
+            'whatsapp_verified_at' => 'datetime',
+            'last_whatsapp_interaction' => 'datetime',
         ];
+    }
+
+    /**
+     * Get enrollments for this user
+     */
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
+    /**
+     * Get payments for this user
+     */
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Get events created by this user
+     */
+    public function createdEvents()
+    {
+        return $this->hasMany(Event::class, 'created_by');
     }
 }
