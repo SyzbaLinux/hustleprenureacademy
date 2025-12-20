@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class CategoryController extends Controller
 {
@@ -19,11 +19,19 @@ class CategoryController extends Controller
             ->ordered()
             ->get();
 
+        $eventCategoriesCount = Category::whereHas('events', function ($query) {
+            $query->where('type', 'event');
+        })->distinct()->count();
+
+        $courseCategoriesCount = Category::whereHas('events', function ($query) {
+            $query->where('type', 'course');
+        })->distinct()->count();
+
         $stats = [
             'total' => Category::count(),
             'active' => Category::where('is_active', true)->count(),
-            'events' => Category::where('type', 'event')->count(),
-            'courses' => Category::where('type', 'course')->count(),
+            'events' => $eventCategoriesCount,
+            'courses' => $courseCategoriesCount,
         ];
 
         return Inertia::render('Admin/Categories/Index', [
@@ -47,18 +55,37 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:categories,name',
-            'type' => 'required|in:event,course',
-            'description' => 'nullable|string',
             'is_active' => 'boolean',
-            'display_order' => 'nullable|integer',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
+        $validated['is_active'] = $validated['is_active'] ?? true;
 
         Category::create($validated);
 
         return redirect()->route('admin.categories.index')
             ->with('success', 'Category created successfully!');
+    }
+
+    /**
+     * Store a newly created category via modal (returns JSON)
+     */
+    public function storeQuick(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:categories,name',
+        ]);
+
+        $validated['slug'] = Str::slug($validated['name']);
+        $validated['is_active'] = true;
+
+        $category = Category::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'category' => $category,
+            'message' => 'Category created successfully!',
+        ], 201);
     }
 
     /**
@@ -91,11 +118,8 @@ class CategoryController extends Controller
     public function update(Request $request, Category $category)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
-            'type' => 'required|in:event,course',
-            'description' => 'nullable|string',
+            'name' => 'required|string|max:255|unique:categories,name,'.$category->id,
             'is_active' => 'boolean',
-            'display_order' => 'nullable|integer',
         ]);
 
         if ($validated['name'] !== $category->name) {

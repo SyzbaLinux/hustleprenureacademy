@@ -2,17 +2,21 @@
 
 namespace App\Services\Chatbot;
 
-use App\Services\WhatsApp\WhatsAppService;
-use App\Services\WhatsApp\MessageBuilder;
 use App\Services\WhatsApp\FlowManager;
+use App\Services\WhatsApp\MessageBuilder;
+use App\Services\WhatsApp\WhatsAppService;
 use Illuminate\Support\Facades\Log;
 
 class ChatbotService
 {
     protected $whatsapp;
+
     protected $messageBuilder;
+
     protected $flowManager;
+
     protected $eventBrowser;
+
     protected $enrollmentService;
 
     public function __construct(
@@ -37,8 +41,9 @@ class ChatbotService
         $phoneNumber = $message['from'] ?? null;
         $messageId = $message['id'] ?? null;
 
-        if (!$phoneNumber) {
+        if (! $phoneNumber) {
             Log::warning('WhatsApp message missing phone number', $message);
+
             return;
         }
 
@@ -57,7 +62,7 @@ class ChatbotService
             } else {
                 $this->whatsapp->sendTextMessage(
                     $phoneNumber,
-                    "Sorry, I can only process text messages and button responses."
+                    'Sorry, I can only process text messages and button responses.'
                 );
             }
         } catch (\Exception $e) {
@@ -95,7 +100,7 @@ class ChatbotService
      */
     private function handleButtonResponse(string $phoneNumber, ?string $buttonId): void
     {
-        if (!$buttonId) {
+        if (! $buttonId) {
             return;
         }
 
@@ -114,18 +119,18 @@ class ChatbotService
             case 'view':
                 $eventId = $parts[2] ?? null;
                 if ($eventId) {
-                    $this->eventBrowser->showEventDetails($phoneNumber, (int)$eventId);
+                    $this->eventBrowser->showEventDetails($phoneNumber, (int) $eventId);
                 }
                 break;
 
             case 'enroll':
-                $eventId = $parts[1] ?? null;
+                $eventId = $parts[2] ?? null;
                 if ($eventId) {
-                    $this->enrollmentService->initiateEnrollment($phoneNumber, (int)$eventId);
+                    $this->enrollmentService->initiateEnrollment($phoneNumber, (int) $eventId);
                 }
                 break;
 
-            case 'pay':
+            case 'payment':
                 $paymentMethod = $parts[1] ?? 'ecocash';
                 $this->enrollmentService->processPaymentMethodSelection($phoneNumber, $paymentMethod);
                 break;
@@ -145,8 +150,19 @@ class ChatbotService
                 $this->showMainMenu($phoneNumber);
                 break;
 
+            case 'back':
+                // Handle 'back_to_main' button
+                if (isset($parts[1]) && $parts[1] === 'to' && isset($parts[2]) && $parts[2] === 'main') {
+                    $this->showMainMenu($phoneNumber);
+                }
+                break;
+
             case 'help':
                 $this->showHelp($phoneNumber);
+                break;
+
+            case 'check':
+                $this->enrollmentService->checkPaymentStatusManually($phoneNumber);
                 break;
 
             default:
@@ -162,7 +178,7 @@ class ChatbotService
      */
     private function handleListResponse(string $phoneNumber, ?string $listId): void
     {
-        if (!$listId) {
+        if (! $listId) {
             return;
         }
 
@@ -176,7 +192,7 @@ class ChatbotService
             case 'category':
                 $categoryId = $parts[1] ?? null;
                 if ($categoryId) {
-                    $this->eventBrowser->showEventsByCategory($phoneNumber, (int)$categoryId);
+                    $this->eventBrowser->showEventsByCategory($phoneNumber, (int) $categoryId);
                 }
                 break;
 
@@ -199,14 +215,26 @@ class ChatbotService
         $flow = $this->flowManager->getCurrentFlow($phoneNumber);
         $currentState = $flow?->current_state ?? 'idle';
 
-        // Handle global commands
-        if (in_array($text, ['menu', 'start', 'hi', 'hello', 'hey'])) {
+        // Handle global commands - exact matches
+        if (in_array($text, ['menu', 'start'])) {
             $this->showMainMenu($phoneNumber);
+
             return;
+        }
+
+        // Handle greetings - starts with
+        $greetings = ['hi', 'hie', 'hello', 'hey', 'hola', 'good morning', 'good afternoon', 'good evening'];
+        foreach ($greetings as $greeting) {
+            if (str_starts_with($text, $greeting)) {
+                $this->showMainMenu($phoneNumber);
+
+                return;
+            }
         }
 
         if (in_array($text, ['help', '?'])) {
             $this->showHelp($phoneNumber);
+
             return;
         }
 
@@ -217,15 +245,29 @@ class ChatbotService
                 $this->handleMainMenuText($phoneNumber, $text);
                 break;
 
+            case 'browsing_categories':
+                $this->handleCategorySelection($phoneNumber, $text);
+                break;
+
+            case 'browsing_events':
+            case 'browsing_courses':
+                $this->handleEventSelection($phoneNumber, $text);
+                break;
+
             case 'awaiting_payment_number':
                 $this->enrollmentService->processPaymentNumber($phoneNumber, $text);
                 break;
 
             case 'awaiting_payment_confirmation':
-                $this->whatsapp->sendTextMessage(
-                    $phoneNumber,
-                    "⏳ Please complete the payment on your phone. We're checking the status...\n\nThis may take up to 2 minutes."
-                );
+                if (in_array($text, ['check', 'check status'])) {
+                    $this->enrollmentService->checkPaymentStatusManually($phoneNumber);
+                } else {
+                    $this->whatsapp->sendTextMessage(
+                        $phoneNumber,
+                        "⏳ Please complete the payment on your phone. We're checking the status...\n\nThis may take up to 2 minutes.\n\n".
+                        "💡 Tip: Type 'check' to manually check the payment status."
+                    );
+                }
                 break;
 
             default:
@@ -241,6 +283,31 @@ class ChatbotService
      */
     private function handleMainMenuText(string $phoneNumber, string $text): void
     {
+        // Check if numeric input
+        if (is_numeric($text)) {
+            $option = (int) $text;
+
+            switch ($option) {
+                case 1:
+                    $this->eventBrowser->showCategories($phoneNumber, 'event');
+                    break;
+                case 2:
+                    $this->eventBrowser->showCategories($phoneNumber, 'course');
+                    break;
+                case 3:
+                    $this->enrollmentService->showMyEnrollments($phoneNumber);
+                    break;
+                default:
+                    $this->whatsapp->sendTextMessage(
+                        $phoneNumber,
+                        "Invalid option. Please reply with 1, 2, or 3.\n\nType 'menu' to see options again."
+                    );
+            }
+
+            return;
+        }
+
+        // Handle text-based commands
         if (str_contains($text, 'event')) {
             $this->eventBrowser->showCategories($phoneNumber, 'event');
         } elseif (str_contains($text, 'course')) {
@@ -253,16 +320,151 @@ class ChatbotService
     }
 
     /**
-     * Show main menu
+     * Handle category selection in browsing_categories state
+     */
+    private function handleCategorySelection(string $phoneNumber, string $text): void
+    {
+        // Check if numeric input
+        if (! is_numeric($text)) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                "Please reply with a category number.\n\nType 'menu' to go back to the main menu."
+            );
+
+            return;
+        }
+
+        $selectedIndex = (int) $text;
+        $flow = $this->flowManager->getCurrentFlow($phoneNumber);
+        $categories = $flow?->getContext('categories', []);
+
+        // Validate selection
+        if ($selectedIndex < 1 || $selectedIndex > count($categories)) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                "Invalid category number. Please select a valid option.\n\nType 'menu' to go back."
+            );
+
+            return;
+        }
+
+        // Get the category ID from the stored array (arrays are 0-indexed)
+        $categoryId = $categories[$selectedIndex - 1];
+
+        // Show events/courses for the selected category
+        $this->eventBrowser->showEventsByCategory($phoneNumber, $categoryId);
+    }
+
+    /**
+     * Handle event selection in browsing_events/courses state
+     */
+    private function handleEventSelection(string $phoneNumber, string $text): void
+    {
+        // Check if numeric input
+        if (! is_numeric($text)) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                "Please reply with an event number.\n\nType 'menu' to go back to the main menu."
+            );
+
+            return;
+        }
+
+        $selectedIndex = (int) $text;
+        $flow = $this->flowManager->getCurrentFlow($phoneNumber);
+        $events = $flow?->getContext('events', []);
+
+        // Validate selection
+        if ($selectedIndex < 1 || $selectedIndex > count($events)) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                'Invalid event number. Please select a valid option (1-'.count($events).").\n\nType 'menu' to go back."
+            );
+
+            return;
+        }
+
+        // Get the event ID from the stored array (arrays are 0-indexed)
+        $eventId = $events[$selectedIndex - 1];
+
+        // Show full event details directly
+        $this->eventBrowser->showEventDetails($phoneNumber, $eventId);
+    }
+
+    /**
+     * Handle event action selection in selected_event state
+     */
+    private function handleEventActionSelection(string $phoneNumber, string $text): void
+    {
+        // Check if numeric input
+        if (! is_numeric($text)) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                "Please reply with an action number (1-3).\n\nType 'menu' to go back."
+            );
+
+            return;
+        }
+
+        $selectedAction = (int) $text;
+        $flow = $this->flowManager->getCurrentFlow($phoneNumber);
+        $eventId = $flow?->getContext('event_id');
+
+        if (! $eventId) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                "Session expired. Please browse events again.\n\nType 'menu' to start over."
+            );
+            $this->flowManager->clearFlow($phoneNumber);
+
+            return;
+        }
+
+        // Handle action selection
+        switch ($selectedAction) {
+            case 1:
+                // View Full Details
+                $this->eventBrowser->showEventDetails($phoneNumber, (int) $eventId);
+                break;
+
+            case 2:
+                // Enroll & Pay
+                $this->enrollmentService->initiateEnrollment($phoneNumber, (int) $eventId);
+                break;
+
+            case 3:
+                // Back to Events - retrieve category from context
+                $categoryId = $flow?->getContext('category_id');
+                if ($categoryId) {
+                    $this->eventBrowser->showEventsByCategory($phoneNumber, (int) $categoryId);
+                } else {
+                    $this->showMainMenu($phoneNumber);
+                }
+                break;
+
+            default:
+                $this->whatsapp->sendTextMessage(
+                    $phoneNumber,
+                    "Invalid option. Please reply with 1, 2, or 3.\n\nType 'menu' to go back."
+                );
+        }
+    }
+
+    /**
+     * Show main menu with image and numbered options
      */
     public function showMainMenu(string $phoneNumber): void
     {
-        $buttons = $this->messageBuilder->buildMainMenu();
-        $welcomeMessage = $this->messageBuilder->buildWelcomeMessage();
+        // Get user name if available
+        $user = \App\Models\User::where('phone_number', $phoneNumber)->first();
+        $userName = $user?->name;
 
-        $this->whatsapp->sendInteractiveButtons(
+        $welcomeMessage = $this->messageBuilder->buildWelcomeMessage($userName);
+        $imageUrl = 'https://img.freepik.com/free-photo/duck-nature-generate-image_23-2150631898.jpg';
+
+        $this->whatsapp->sendImageMessage(
             $phoneNumber,
-            $buttons,
+            $imageUrl,
             $welcomeMessage
         );
 
@@ -295,7 +497,7 @@ class ChatbotService
         $message .= "6. Complete payment on your phone\n\n";
         $message .= "Need more help? Contact us:\n";
         $message .= "📧 support@hustleprenureacademy.com\n";
-        $message .= "📱 WhatsApp: +263 XX XXX XXXX";
+        $message .= '📱 WhatsApp: +263 XX XXX XXXX';
 
         $this->whatsapp->sendTextMessage($phoneNumber, $message);
 

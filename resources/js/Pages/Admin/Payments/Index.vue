@@ -125,8 +125,7 @@
           <table class="w-full">
             <thead class="bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Reference</th>
-                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Event</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Event & Reference</th>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">User</th>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Amount</th>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Method</th>
@@ -137,19 +136,19 @@
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-slate-700">
               <tr v-for="payment in payments.data" :key="payment.id" class="hover:bg-gray-50 dark:hover:bg-slate-900/50">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <p class="text-sm font-mono font-medium text-gray-900 dark:text-white">{{ payment.reference_number }}</p>
-                  <p v-if="payment.transaction_id" class="text-xs text-gray-600 dark:text-gray-400">{{ payment.transaction_id }}</p>
-                </td>
                 <td class="px-6 py-4">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">{{ payment.event?.title || 'N/A' }}</p>
+                  <div>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ payment.event?.title || 'N/A' }}</p>
+                    <p class="text-xs font-mono text-gray-600 dark:text-gray-400 mt-1">{{ payment.reference_number }}</p>
+                    <p v-if="payment.transaction_id" class="text-xs text-gray-500 dark:text-gray-500">ID: {{ payment.transaction_id }}</p>
+                  </div>
                 </td>
                 <td class="px-6 py-4">
                   <p class="text-sm font-medium text-gray-900 dark:text-white">{{ payment.user?.name || 'Guest' }}</p>
                   <p class="text-xs text-gray-600 dark:text-gray-400">{{ payment.phone_number }}</p>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">{{ payment.currency }} {{ formatAmount(payment.amount) }}</p>
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ payment.currency }} {{ formatAmount(payment.amount) }}</p>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200">
@@ -177,13 +176,36 @@
                   {{ formatDate(payment.created_at) }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Link
-                    :href="route('admin.payments.show', payment.id)"
-                    class="p-2 text-[#b30d4f] dark:text-[#e0156b] hover:bg-[#b30d4f]/10 dark:hover:bg-[#b30d4f]/20 rounded-lg transition-colors inline-flex items-center"
-                    title="View details"
-                  >
-                    <i class="fas fa-eye"></i>
-                  </Link>
+                  <div class="flex items-center justify-end gap-2">
+                    <Link
+                      :href="route('admin.payments.show', payment.id)"
+                      class="px-3 py-2 bg-[#b30d4f] text-white rounded-lg hover:bg-[#a00a46] transition-colors inline-flex items-center gap-2 font-medium"
+                      title="View details"
+                    >
+                      <i class="fas fa-eye"></i>
+                      <span>View</span>
+                    </Link>
+                    <button
+                      v-if="payment.status === 'failed' || payment.status === 'pending'"
+                      @click="markAsPaid(payment)"
+                      :disabled="processingPaymentId === payment.id"
+                      class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors inline-flex items-center gap-2 font-medium"
+                      :title="`Mark as paid`"
+                    >
+                      <i class="fas fa-check"></i>
+                      <span>Paid</span>
+                    </button>
+                    <button
+                      v-if="payment.status === 'paid' && !payment.enrollment"
+                      @click="createEnrollment(payment)"
+                      :disabled="processingPaymentId === payment.id"
+                      class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors inline-flex items-center gap-2 font-medium"
+                      :title="`Create enrollment`"
+                    >
+                      <i class="fas fa-plus"></i>
+                      <span>Enroll</span>
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -276,10 +298,49 @@ const props = defineProps<{
 }>();
 
 const currentFilter = ref(props.currentFilter || 'all');
+const processingPaymentId = ref<number | null>(null);
 
 const filterByStatus = (status: string) => {
   currentFilter.value = status;
   router.get(route('admin.payments.index'), { status }, { preserveState: true });
+};
+
+const markAsPaid = (payment: Payment) => {
+  processingPaymentId.value = payment.id;
+  router.post(
+    route('admin.payments.mark-paid', payment.id),
+    {},
+    {
+      onSuccess: () => {
+        router.reload();
+      },
+      onError: () => {
+        processingPaymentId.value = null;
+      },
+      onFinish: () => {
+        processingPaymentId.value = null;
+      },
+    }
+  );
+};
+
+const createEnrollment = (payment: Payment) => {
+  processingPaymentId.value = payment.id;
+  router.post(
+    route('admin.payments.create-enrollment', payment.id),
+    {},
+    {
+      onSuccess: () => {
+        router.reload();
+      },
+      onError: () => {
+        processingPaymentId.value = null;
+      },
+      onFinish: () => {
+        processingPaymentId.value = null;
+      },
+    }
+  );
 };
 
 const formatDate = (dateString: string) => {
@@ -287,8 +348,8 @@ const formatDate = (dateString: string) => {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
-const formatAmount = (amount: number) => {
-  return amount.toFixed(2);
+const formatAmount = (amount: number | string) => {
+  return Number(amount).toFixed(2);
 };
 
 const getStatusIcon = (status: string) => {

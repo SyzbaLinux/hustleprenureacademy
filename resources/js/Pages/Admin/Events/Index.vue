@@ -164,11 +164,8 @@
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Event/Course</th>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Category</th>
-                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Instructors</th>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Price</th>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Enrollments</th>
                 <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -184,8 +181,9 @@
                     </div>
                     <div class="min-w-0">
                       <p class="font-medium text-gray-900 dark:text-white truncate">{{ event.title }}</p>
-                      <p v-if="event.short_description" class="text-sm text-gray-600 dark:text-gray-400 truncate">
-                        {{ event.short_description }}
+                      <p class="text-sm text-gray-600 dark:text-gray-400">
+                        <span v-if="event.category">{{ event.category.name }}</span>
+                        <span v-else class="text-gray-400">No category</span>
                       </p>
                     </div>
                   </div>
@@ -207,25 +205,6 @@
                     Featured
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                  <span v-if="event.category" class="text-gray-900 dark:text-white">{{ event.category.name }}</span>
-                  <span v-else class="text-gray-400">-</span>
-                </td>
-                <td class="px-6 py-4">
-                  <div v-if="event.instructors && event.instructors.length > 0" class="flex flex-wrap gap-1">
-                    <span
-                      v-for="instructor in event.instructors.slice(0, 2)"
-                      :key="instructor.id"
-                      class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300"
-                    >
-                      {{ instructor.name }}
-                    </span>
-                    <span v-if="event.instructors.length > 2" class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300">
-                      +{{ event.instructors.length - 2 }}
-                    </span>
-                  </div>
-                  <span v-else class="text-sm text-gray-400">-</span>
-                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                   {{ event.currency }} {{ event.amount }}
                 </td>
@@ -242,26 +221,28 @@
                     {{ event.is_active ? 'Active' : 'Inactive' }}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  {{ event.enrollments_count || 0 }}
-                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div class="flex items-center justify-end gap-2">
                     <Link
-                      :href="route('admin.events.edit', event.id)"
-                      class="p-2 text-[#b30d4f] dark:text-[#e0156b] hover:bg-[#b30d4f]/10 dark:hover:bg-[#b30d4f]/20 rounded-lg transition-colors"
-                      title="Edit"
+                      :href="route('admin.events.show', event.id)"
+                      class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors text-xs font-medium"
                     >
-                      <i class="fas fa-edit"></i>
+                      View
+                    </Link>
+                    <Link
+                      :href="route('admin.events.edit', event.id)"
+                      class="px-3 py-1.5 bg-[#b30d4f] text-white rounded-lg hover:bg-[#8b0a3d] transition-colors text-xs font-medium"
+                    >
+                      Edit
                     </Link>
                     <button
                       @click="deleteEvent(event)"
-                      class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      class="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors text-xs font-medium"
                       :disabled="event.enrollments_count > 0"
                       :class="{ 'opacity-50 cursor-not-allowed': event.enrollments_count > 0 }"
                       :title="event.enrollments_count > 0 ? 'Cannot delete with enrollments' : 'Delete'"
                     >
-                      <i class="fas fa-trash"></i>
+                      Delete
                     </button>
                   </div>
                 </td>

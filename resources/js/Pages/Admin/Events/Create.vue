@@ -109,30 +109,39 @@
             <label for="category_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Category <span class="text-red-500">*</span>
             </label>
-            <select
-              id="category_id"
-              v-model="form.category_id"
-              required
-              class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[#b30d4f] dark:focus:ring-[#e0156b] focus:border-transparent bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
-            >
-              <option value="">Select category</option>
-              <option v-for="category in categories" :key="category.id" :value="category.id">
-                {{ category.name }}
-              </option>
-            </select>
+            <div class="flex gap-2">
+              <select
+                id="category_id"
+                v-model="form.category_id"
+                required
+                class="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[#b30d4f] dark:focus:ring-[#e0156b] focus:border-transparent bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
+              >
+                <option value="">Select category</option>
+                <option v-for="category in categoryList" :key="category.id" :value="category.id">
+                  {{ category.name }}
+                </option>
+              </select>
+              <button
+                type="button"
+                @click="showCategoryModal = true"
+                class="px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+                title="Create new category"
+              >
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
             <p v-if="form.errors.category_id" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.errors.category_id }}</p>
           </div>
 
           <!-- Instructors -->
           <div>
             <label for="instructors" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Instructors <span class="text-red-500">*</span>
+              Instructors <span class="text-xs text-gray-500 dark:text-gray-400">(Optional)</span>
             </label>
             <select
               id="instructors"
               v-model="form.instructor_ids"
               multiple
-              required
               class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[#b30d4f] dark:focus:ring-[#e0156b] focus:border-transparent bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
               size="4"
             >
@@ -366,6 +375,13 @@
         </div>
       </form>
     </div>
+
+    <!-- Create Category Modal -->
+    <CreateCategoryModal
+      :show="showCategoryModal"
+      @close="showCategoryModal = false"
+      @created="handleCategoryCreated"
+    />
   </AdminLayout>
 </template>
 
@@ -373,6 +389,7 @@
 import { ref } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import CreateCategoryModal from '@/Components/CreateCategoryModal.vue';
 
 interface Category {
   id: number;
@@ -384,12 +401,14 @@ interface Instructor {
   name: string;
 }
 
-defineProps<{
+const props = defineProps<{
   categories: Category[];
   instructors: Instructor[];
 }>();
 
 const flierPreview = ref<string | null>(null);
+const showCategoryModal = ref(false);
+const categoryList = ref<Category[]>([...props.categories]);
 
 const form = useForm({
   type: 'event' as 'event' | 'course',
@@ -423,6 +442,11 @@ const handleFlierUpload = (event: Event) => {
     };
     reader.readAsDataURL(file);
   }
+};
+
+const handleCategoryCreated = (category: Category) => {
+  categoryList.value.push(category);
+  form.category_id = category.id;
 };
 
 const submit = () => {

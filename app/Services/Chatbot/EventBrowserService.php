@@ -3,16 +3,18 @@
 namespace App\Services\Chatbot;
 
 use App\Models\Category;
-use App\Models\Event;
 use App\Models\Enrollment;
-use App\Services\WhatsApp\WhatsAppService;
-use App\Services\WhatsApp\MessageBuilder;
+use App\Models\Event;
 use App\Services\WhatsApp\FlowManager;
+use App\Services\WhatsApp\MessageBuilder;
+use App\Services\WhatsApp\WhatsAppService;
 
 class EventBrowserService
 {
     protected $whatsapp;
+
     protected $messageBuilder;
+
     protected $flowManager;
 
     public function __construct(
@@ -30,27 +32,33 @@ class EventBrowserService
      */
     public function showCategories(string $phoneNumber, string $type = 'event'): void
     {
-        $categories = Category::active()->ordered()->get();
+        $categories = Category::active()
+            ->ordered()
+            ->whereHas('events', function ($query) use ($type) {
+                $query->where('type', $type)
+                    ->active()
+                    ->published()
+                    ->available();
+            })
+            ->get();
 
         if ($categories->isEmpty()) {
+            $typeLabel = $type === 'event' ? 'events' : 'courses';
             $this->whatsapp->sendTextMessage(
                 $phoneNumber,
-                "Sorry, there are no categories available at the moment. Please check back later."
+                "Sorry, there are no categories with available {$typeLabel} at the moment. Please check back later."
             );
+
             return;
         }
 
-        $sections = $this->messageBuilder->buildCategoryList($categories);
+        $message = $this->messageBuilder->buildCategoryNumberedList($categories, $type);
 
-        $this->whatsapp->sendInteractiveList(
-            $phoneNumber,
-            $sections,
-            "Select a category to browse " . ($type === 'event' ? 'events' : 'courses') . ":",
-            'Select Category'
-        );
+        $this->whatsapp->sendTextMessage($phoneNumber, $message);
 
         $this->flowManager->transitionTo($phoneNumber, 'browsing_categories', [
             'type' => $type,
+            'categories' => $categories->pluck('id')->toArray(),
         ]);
     }
 
@@ -65,35 +73,56 @@ class EventBrowserService
             ->where('type', $type)
             ->active()
             ->published()
-            ->with(['category', 'instructors'])
+            ->available()
+            ->with(['category', 'instructors', 'schedules'])
             ->latest('published_at')
-            ->limit(5)
+            ->limit(10)
             ->get();
 
         if ($events->isEmpty()) {
             $category = Category::find($categoryId);
             $this->whatsapp->sendTextMessage(
                 $phoneNumber,
-                "Sorry, there are no {$type}s available in the {$category->name} category at the moment."
+                "Sorry, there are no available {$type}s in the {$category->name} category at the moment.\n\nType 'menu' to go back."
             );
+
             return;
         }
 
-        // Send each event as a separate card
-        foreach ($events as $event) {
-            $eventCard = $this->messageBuilder->buildEventCard($event);
+        // Send numbered list instead of individual cards
+        $message = $this->messageBuilder->buildEventNumberedList($events, $type);
+        $this->whatsapp->sendTextMessage($phoneNumber, $message);
 
-            $this->whatsapp->sendInteractiveButtons(
-                $phoneNumber,
-                $eventCard['buttons'],
-                $eventCard['body'],
-                $eventCard['header']
-            );
-        }
-
-        $this->flowManager->transitionTo($phoneNumber, 'browsing_' . $type . 's', [
+        // Store event IDs in context
+        $this->flowManager->transitionTo($phoneNumber, 'browsing_'.$type.'s', [
             'category_id' => $categoryId,
             'type' => $type,
+            'events' => $events->pluck('id')->toArray(),
+        ]);
+    }
+
+    /**
+     * Show event action menu
+     */
+    public function showEventActionMenu(string $phoneNumber, int $eventId): void
+    {
+        $event = Event::with(['category', 'instructors', 'schedules'])
+            ->find($eventId);
+
+        if (! $event) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                'Sorry, this event/course is no longer available.'
+            );
+
+            return;
+        }
+
+        $message = $this->messageBuilder->buildEventActionMenu($event);
+        $this->whatsapp->sendTextMessage($phoneNumber, $message);
+
+        $this->flowManager->transitionTo($phoneNumber, 'selected_event', [
+            'event_id' => $eventId,
         ]);
     }
 
@@ -105,11 +134,12 @@ class EventBrowserService
         $event = Event::with(['category', 'instructors', 'schedules', 'prerequisites.prerequisiteCourse'])
             ->find($eventId);
 
-        if (!$event) {
+        if (! $event) {
             $this->whatsapp->sendTextMessage(
                 $phoneNumber,
-                "Sorry, this event/course is no longer available."
+                'Sorry, this event/course is no longer available.'
             );
+
             return;
         }
 
@@ -118,10 +148,10 @@ class EventBrowserService
         $message .= "📂 Category: {$event->category->name}\n";
 
         if ($event->instructors->isNotEmpty()) {
-            $message .= "👨‍🏫 Instructor(s): " . $event->instructors->pluck('name')->join(', ') . "\n";
+            $message .= '👨‍🏫 Instructor(s): '.$event->instructors->pluck('name')->join(', ')."\n";
         }
 
-        $message .= "📍 Location: ";
+        $message .= '📍 Location: ';
         if ($event->location_type === 'online') {
             $message .= "Online\n";
         } elseif ($event->location_type === 'hybrid') {
@@ -159,7 +189,25 @@ class EventBrowserService
             }
         }
 
-        $this->whatsapp->sendTextMessage($phoneNumber, $message);
+        // Build buttons for actions
+        $buttons = [
+            [
+                'type' => 'reply',
+                'reply' => [
+                    'id' => 'back_to_main',
+                    'title' => 'Main Menu',
+                ],
+            ],
+            [
+                'type' => 'reply',
+                'reply' => [
+                    'id' => "enroll_event_{$event->id}",
+                    'title' => 'Enroll & Pay 💳',
+                ],
+            ],
+        ];
+
+        $this->whatsapp->sendInteractiveButtons($phoneNumber, $buttons, $message);
 
         $this->flowManager->transitionTo($phoneNumber, 'viewing_event_details', [
             'event_id' => $eventId,
@@ -173,7 +221,7 @@ class EventBrowserService
     {
         $course = Event::with('prerequisites.prerequisiteCourse')->find($courseId);
 
-        if (!$course || $course->prerequisites->isEmpty()) {
+        if (! $course || $course->prerequisites->isEmpty()) {
             return true; // No prerequisites
         }
 
@@ -186,12 +234,12 @@ class EventBrowserService
         $missingRequired = [];
 
         foreach ($course->prerequisites as $prereq) {
-            if ($prereq->is_required && !in_array($prereq->prerequisite_course_id, $completedCourses)) {
+            if ($prereq->is_required && ! in_array($prereq->prerequisite_course_id, $completedCourses)) {
                 $missingRequired[] = $prereq->prerequisiteCourse->title;
             }
         }
 
-        if (!empty($missingRequired)) {
+        if (! empty($missingRequired)) {
             $message = "⚠️ *Prerequisites Not Met*\n\n";
             $message .= "To enroll in this course, you must first complete:\n\n";
             foreach ($missingRequired as $title) {
@@ -200,6 +248,7 @@ class EventBrowserService
             $message .= "\nPlease complete these courses first before enrolling.";
 
             $this->whatsapp->sendTextMessage($phoneNumber, $message);
+
             return false;
         }
 

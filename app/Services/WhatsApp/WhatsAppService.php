@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Log;
 class WhatsAppService
 {
     protected $graphApiToken;
+
     protected $businessPhoneNumberId;
+
     protected $apiVersion;
 
     public function __construct()
@@ -25,7 +27,7 @@ class WhatsAppService
     {
         try {
             $response = Http::withToken($this->graphApiToken)
-                ->post($this->getApiUrl() . '/messages', [
+                ->post($this->getApiUrl().'/messages', [
                     'messaging_product' => 'whatsapp',
                     'to' => $to,
                     'type' => 'text',
@@ -87,7 +89,7 @@ class WhatsAppService
             }
 
             $response = Http::withToken($this->graphApiToken)
-                ->post($this->getApiUrl() . '/messages', [
+                ->post($this->getApiUrl().'/messages', [
                     'messaging_product' => 'whatsapp',
                     'to' => $to,
                     'type' => 'interactive',
@@ -144,7 +146,7 @@ class WhatsAppService
             }
 
             $response = Http::withToken($this->graphApiToken)
-                ->post($this->getApiUrl() . '/messages', [
+                ->post($this->getApiUrl().'/messages', [
                     'messaging_product' => 'whatsapp',
                     'to' => $to,
                     'type' => 'interactive',
@@ -182,13 +184,65 @@ class WhatsAppService
     }
 
     /**
+     * Send an image message with optional caption
+     */
+    public function sendImageMessage(string $to, string $imageUrl, ?string $caption = null): array
+    {
+        try {
+            $payload = [
+                'messaging_product' => 'whatsapp',
+                'to' => $to,
+                'type' => 'image',
+                'image' => [
+                    'link' => $imageUrl,
+                ],
+            ];
+
+            if ($caption) {
+                $payload['image']['caption'] = $caption;
+            }
+
+            $response = Http::withToken($this->graphApiToken)
+                ->post($this->getApiUrl().'/messages', $payload);
+
+            if ($response->successful()) {
+                Log::info('WhatsApp image message sent', [
+                    'to' => $to,
+                    'message_id' => $response->json('messages.0.id'),
+                ]);
+            } else {
+                Log::error('WhatsApp image message failed', [
+                    'to' => $to,
+                    'status' => $response->status(),
+                    'error' => $response->json(),
+                ]);
+            }
+
+            return [
+                'success' => $response->successful(),
+                'data' => $response->json(),
+            ];
+        } catch (\Exception $e) {
+            Log::error('WhatsApp service exception', [
+                'error' => $e->getMessage(),
+                'to' => $to,
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Mark message as read
      */
     public function markMessageAsRead(string $messageId): bool
     {
         try {
             $response = Http::withToken($this->graphApiToken)
-                ->post($this->getApiUrl() . '/messages', [
+                ->post($this->getApiUrl().'/messages', [
                     'messaging_product' => 'whatsapp',
                     'status' => 'read',
                     'message_id' => $messageId,

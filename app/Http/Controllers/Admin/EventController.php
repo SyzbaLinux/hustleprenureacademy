@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Event;
 use App\Models\Category;
+use App\Models\CourseSchedule;
+use App\Models\Event;
 use App\Models\Instructor;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class EventController extends Controller
 {
@@ -22,10 +23,10 @@ class EventController extends Controller
         // Search
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('short_description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('short_description', 'like', "%{$search}%");
             });
         }
 
@@ -129,6 +130,11 @@ class EventController extends Controller
         $validated['slug'] = Str::slug($validated['title']);
         $validated['created_by'] = auth()->id();
 
+        // Auto-publish if not explicitly set
+        if (! isset($validated['published_at'])) {
+            $validated['published_at'] = now();
+        }
+
         // Handle file upload
         if ($request->hasFile('flier')) {
             $path = $request->file('flier')->store('events', 'public');
@@ -138,12 +144,12 @@ class EventController extends Controller
         $event = Event::create($validated);
 
         // Attach instructors
-        if (!empty($validated['instructor_ids'])) {
+        if (! empty($validated['instructor_ids'])) {
             $event->instructors()->attach($validated['instructor_ids']);
         }
 
-        return redirect()->route('admin.events.index')
-            ->with('success', ucfirst($event->type) . ' created successfully!');
+        return redirect()->route('admin.events.show', $event->id)
+            ->with('success', ucfirst($event->type).' created successfully!');
     }
 
     /**
@@ -209,6 +215,11 @@ class EventController extends Controller
             $validated['slug'] = Str::slug($validated['title']);
         }
 
+        // Auto-publish if not explicitly set and event is currently unpublished
+        if (! isset($validated['published_at']) && is_null($event->published_at)) {
+            $validated['published_at'] = now();
+        }
+
         // Handle file upload
         if ($request->hasFile('flier')) {
             // Delete old flier
@@ -228,7 +239,7 @@ class EventController extends Controller
         }
 
         return redirect()->route('admin.events.index')
-            ->with('success', ucfirst($event->type) . ' updated successfully!');
+            ->with('success', ucfirst($event->type).' updated successfully!');
     }
 
     /**
@@ -240,6 +251,82 @@ class EventController extends Controller
         $event->delete();
 
         return redirect()->route('admin.events.index')
-            ->with('success', ucfirst($event->type) . ' deleted successfully!');
+            ->with('success', ucfirst($event->type).' deleted successfully!');
+    }
+
+    /**
+     * Store a new schedule for the event/course
+     */
+    public function storeSchedule(Request $request, Event $event)
+    {
+        $validated = $request->validate([
+            'session_number' => 'required|integer|min:1',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'start_date' => 'required|date',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+        ]);
+
+        $validated['event_id'] = $event->id;
+
+        $schedule = CourseSchedule::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'schedule' => $schedule,
+            'message' => 'Schedule added successfully!',
+        ], 201);
+    }
+
+    /**
+     * Update an existing schedule
+     */
+    public function updateSchedule(Request $request, Event $event, CourseSchedule $schedule)
+    {
+        if ($schedule->event_id !== $event->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Schedule does not belong to this event.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'session_number' => 'required|integer|min:1',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'start_date' => 'required|date',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'is_completed' => 'boolean',
+        ]);
+
+        $schedule->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'schedule' => $schedule->fresh(),
+            'message' => 'Schedule updated successfully!',
+        ]);
+    }
+
+    /**
+     * Delete a schedule
+     */
+    public function deleteSchedule(Event $event, CourseSchedule $schedule)
+    {
+        if ($schedule->event_id !== $event->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Schedule does not belong to this event.',
+            ], 403);
+        }
+
+        $schedule->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Schedule deleted successfully!',
+        ]);
     }
 }

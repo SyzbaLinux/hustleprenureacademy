@@ -269,6 +269,26 @@ Route::get('/users', function () {
 
 ## Inertia + Vue Forms
 
+### CRITICAL: Always Use `useForm` for Requests to Avoid 419 Errors
+**IMPORTANT**: Always use Inertia's `useForm()` helper or `<Form>` component for making POST/PUT/DELETE requests. This ensures CSRF tokens are automatically included and prevents "419 Unauthenticated" errors.
+
+**DO NOT** use `router.post()` directly without `useForm()`. Always wrap POST requests in `useForm()`:
+
+```vue
+// ❌ WRONG - Causes 419 errors due to missing CSRF token
+const markAsPaid = (payment) => {
+  router.post(route('admin.payments.mark-paid', payment.id), {})
+};
+
+// ✅ CORRECT - Uses useForm which automatically includes CSRF token
+const form = useForm({})
+const markAsPaid = (payment) => {
+  form.post(route('admin.payments.mark-paid', payment.id), {
+    onSuccess: () => router.reload()
+  })
+};
+```
+
 <code-snippet name="`<Form>` Component Example" lang="vue">
 
 <Form
@@ -329,6 +349,36 @@ Route::get('/users', function () {
 
 ### Dark Mode
 - If existing pages and components support dark mode, new pages and components must support dark mode in a similar way, typically using `dark:`.
+
+### Table Action Buttons
+- Action buttons in tables should use **solid background colors** for visibility, not just text colors or subtle hover states.
+- Each button should have both an **icon and descriptive label** for clarity.
+- Use a `gap-2` between icon and text, and `px-3 py-2` padding for proper sizing.
+- Button color conventions:
+  - **Primary action** (View/Details): Use brand color `bg-[#b30d4f]` with `hover:bg-[#a00a46]`
+  - **Success action** (Mark as Paid): Use green `bg-green-600` with `hover:bg-green-700`
+  - **Secondary action** (Create/Enroll): Use blue `bg-blue-600` with `hover:bg-blue-700`
+  - **Disabled state**: Use `disabled:bg-gray-400` for all buttons
+
+<code-snippet name="Table Action Button Example" lang="vue">
+<!-- Primary Action -->
+<Link href="/details" class="px-3 py-2 bg-[#b30d4f] text-white rounded-lg hover:bg-[#a00a46] transition-colors inline-flex items-center gap-2 font-medium">
+  <i class="fas fa-eye"></i>
+  <span>View</span>
+</Link>
+
+<!-- Success Action -->
+<button @click="markAsPaid(item)" class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors inline-flex items-center gap-2 font-medium">
+  <i class="fas fa-check"></i>
+  <span>Paid</span>
+</button>
+
+<!-- Secondary Action -->
+<button @click="createEnrollment(item)" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors inline-flex items-center gap-2 font-medium">
+  <i class="fas fa-plus"></i>
+  <span>Enroll</span>
+</button>
+</code-snippet>
 
 
 === tailwindcss/v4 rules ===

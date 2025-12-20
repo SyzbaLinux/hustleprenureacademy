@@ -2,21 +2,24 @@
 
 namespace App\Services\Chatbot;
 
-use App\Models\Event;
-use App\Models\Enrollment;
-use App\Models\Payment;
-use App\Services\WhatsApp\WhatsAppService;
-use App\Services\WhatsApp\MessageBuilder;
-use App\Services\WhatsApp\FlowManager;
-use App\Services\Payment\PesePayService;
 use App\Jobs\CheckPaymentStatus;
+use App\Models\Enrollment;
+use App\Models\Event;
+use App\Models\Payment;
+use App\Services\Payment\PesePayService;
+use App\Services\WhatsApp\FlowManager;
+use App\Services\WhatsApp\MessageBuilder;
+use App\Services\WhatsApp\WhatsAppService;
 use Illuminate\Support\Facades\Log;
 
 class EnrollmentService
 {
     protected $whatsapp;
+
     protected $messageBuilder;
+
     protected $flowManager;
+
     protected $pesePayService;
 
     public function __construct(
@@ -38,20 +41,22 @@ class EnrollmentService
     {
         $event = Event::with(['category', 'instructors'])->find($eventId);
 
-        if (!$event) {
+        if (! $event) {
             $this->whatsapp->sendTextMessage(
                 $phoneNumber,
-                "Sorry, this event/course is no longer available."
+                'Sorry, this event/course is no longer available.'
             );
+
             return;
         }
 
         // Check if event is active and published
-        if (!$event->is_active || !$event->published_at) {
+        if (! $event->is_active || ! $event->published_at) {
             $this->whatsapp->sendTextMessage(
                 $phoneNumber,
                 "Sorry, this {$event->type} is not currently available for enrollment."
             );
+
             return;
         }
 
@@ -63,6 +68,7 @@ class EnrollmentService
                     $phoneNumber,
                     "⚠️ Sorry, this {$event->type} is fully booked. No spots available."
                 );
+
                 return;
             }
         }
@@ -78,6 +84,7 @@ class EnrollmentService
                 $phoneNumber,
                 "You are already enrolled in this {$event->type}. Check 'My Enrollments' to view details."
             );
+
             return;
         }
 
@@ -87,7 +94,7 @@ class EnrollmentService
         $message = "💳 *Payment Required*\n\n";
         $message .= "Event: {$event->title}\n";
         $message .= "Amount: \${$event->amount}\n\n";
-        $message .= "Please select your payment method:";
+        $message .= 'Please select your payment method:';
 
         $this->whatsapp->sendInteractiveButtons(
             $phoneNumber,
@@ -107,23 +114,25 @@ class EnrollmentService
     {
         $eventId = $this->flowManager->getContext($phoneNumber, 'event_id');
 
-        if (!$eventId) {
+        if (! $eventId) {
             $this->whatsapp->sendTextMessage(
                 $phoneNumber,
-                "Session expired. Please start again by browsing events."
+                'Session expired. Please start again by browsing events.'
             );
             $this->flowManager->clearFlow($phoneNumber);
+
             return;
         }
 
         $event = Event::find($eventId);
 
-        if (!$event) {
+        if (! $event) {
             $this->whatsapp->sendTextMessage(
                 $phoneNumber,
-                "Sorry, this event is no longer available."
+                'Sorry, this event is no longer available.'
             );
             $this->flowManager->clearFlow($phoneNumber);
+
             return;
         }
 
@@ -147,34 +156,37 @@ class EnrollmentService
         $eventId = $this->flowManager->getContext($phoneNumber, 'event_id');
         $paymentMethod = $this->flowManager->getContext($phoneNumber, 'payment_method', 'mobile_money');
 
-        if (!$eventId) {
+        if (! $eventId) {
             $this->whatsapp->sendTextMessage(
                 $phoneNumber,
-                "Session expired. Please start again."
+                'Session expired. Please start again.'
             );
             $this->flowManager->clearFlow($phoneNumber);
+
             return;
         }
 
         $event = Event::find($eventId);
 
-        if (!$event) {
+        if (! $event) {
             $this->whatsapp->sendTextMessage(
                 $phoneNumber,
-                "Sorry, this event is no longer available."
+                'Sorry, this event is no longer available.'
             );
             $this->flowManager->clearFlow($phoneNumber);
+
             return;
         }
 
         // Clean up phone number
         $cleanedPhone = $this->cleanPhoneNumber($paymentPhoneNumber);
 
-        if (!$this->isValidPhoneNumber($cleanedPhone)) {
+        if (! $this->isValidPhoneNumber($cleanedPhone)) {
             $this->whatsapp->sendTextMessage(
                 $phoneNumber,
                 "⚠️ Invalid phone number format. Please send a valid phone number.\n\nExample: 0771234567"
             );
+
             return;
         }
 
@@ -191,9 +203,10 @@ class EnrollmentService
             $message .= "📱 Please check your phone ({$cleanedPhone}) and enter your PIN to complete the payment.\n\n";
             $message .= "Reference: {$result['reference_number']}\n";
             $message .= "Amount: \${$event->amount}\n\n";
-            $message .= "⏱️ You have 2 minutes to complete the payment.";
+            $message .= '⏱️ You have 2 minutes to complete the payment.';
 
-            $this->whatsapp->sendTextMessage($phoneNumber, $message);
+            $buttons = $this->messageBuilder->buildPaymentConfirmationButtons();
+            $this->whatsapp->sendInteractiveButtons($phoneNumber, $buttons, $message);
 
             // Store payment info in context
             $this->flowManager->transitionTo($phoneNumber, 'awaiting_payment_confirmation', [
@@ -208,8 +221,8 @@ class EnrollmentService
 
         } else {
             $errorMessage = "❌ *Payment Failed*\n\n";
-            $errorMessage .= $result['message'] . "\n\n";
-            $errorMessage = "Please try again or contact support if the problem persists.";
+            $errorMessage .= $result['message']."\n\n";
+            $errorMessage = 'Please try again or contact support if the problem persists.';
 
             $this->whatsapp->sendTextMessage($phoneNumber, $errorMessage);
 
@@ -263,7 +276,7 @@ class EnrollmentService
         }
 
         $message .= "We'll send you reminders before the {$event->type} starts.\n\n";
-        $message .= "Thank you for enrolling with Hustleprenure Academy! 🎓";
+        $message .= 'Thank you for enrolling with Hustleprenure Academy! 🎓';
 
         $this->whatsapp->sendTextMessage($phoneNumber, $message);
 
@@ -278,6 +291,99 @@ class EnrollmentService
     }
 
     /**
+     * Check payment status manually
+     */
+    public function checkPaymentStatusManually(string $phoneNumber): void
+    {
+        $flow = $this->flowManager->getCurrentFlow($phoneNumber);
+        $paymentId = $flow?->getContext('payment_id');
+
+        if (! $paymentId) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                'No active payment to check. Please try enrolling again.'
+            );
+            $this->flowManager->clearFlow($phoneNumber);
+
+            return;
+        }
+
+        $payment = Payment::find($paymentId);
+
+        if (! $payment) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                'Payment record not found. Please contact support if you need help.'
+            );
+            $this->flowManager->clearFlow($phoneNumber);
+
+            return;
+        }
+
+        $this->whatsapp->sendTextMessage(
+            $phoneNumber,
+            "🔄 Checking payment status...\n\nPlease wait a moment."
+        );
+
+        $result = $this->pesePayService->checkPaymentStatus($payment->reference_number);
+
+        if ($result['paid']) {
+            // Payment successful
+            $payment->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+                'pesepay_response' => array_merge(
+                    $payment->pesepay_response ?? [],
+                    [
+                        'manual_check_result' => $result,
+                        'confirmed_at' => now()->toIso8601String(),
+                    ]
+                ),
+            ]);
+
+            Log::info('Payment confirmed via manual check', [
+                'payment_id' => $payment->id,
+                'reference' => $payment->reference_number,
+            ]);
+
+            // Complete enrollment
+            $this->completeEnrollment($payment);
+        } elseif ($result['status'] === 'failed') {
+            // Payment failed
+            $payment->update([
+                'status' => 'failed',
+                'failed_reason' => $result['transaction_status'] ?? 'Payment failed',
+                'pesepay_response' => array_merge(
+                    $payment->pesepay_response ?? [],
+                    [
+                        'manual_check_result' => $result,
+                        'failed_at' => now()->toIso8601String(),
+                    ]
+                ),
+            ]);
+
+            Log::warning('Payment confirmed as failed via manual check', [
+                'payment_id' => $payment->id,
+                'reference' => $payment->reference_number,
+                'reason' => $result['transaction_status'],
+            ]);
+
+            $this->handleFailedPayment($payment);
+        } else {
+            // Still pending
+            $message = "⏳ *Payment Status: Pending*\n\n";
+            $message .= "Your payment is still being processed.\n\n";
+            $message .= "Reference: {$payment->reference_number}\n";
+            $message .= "Amount: \${$payment->amount}\n\n";
+            $message .= "Please wait a moment and try again, or:\n";
+            $message .= "• Type 'check' to check status again\n";
+            $message .= "• Type 'menu' to start over";
+
+            $this->whatsapp->sendTextMessage($phoneNumber, $message);
+        }
+    }
+
+    /**
      * Handle failed payment
      */
     public function handleFailedPayment(Payment $payment): void
@@ -288,7 +394,7 @@ class EnrollmentService
         $message = "❌ *Payment Failed*\n\n";
         $message .= "Your payment for {$event->title} could not be processed.\n\n";
         $message .= "Reason: {$payment->failed_reason}\n\n";
-        $message .= "Please try again or contact support if you need assistance.";
+        $message .= 'Please try again or contact support if you need assistance.';
 
         $this->whatsapp->sendTextMessage($phoneNumber, $message);
 
@@ -319,6 +425,7 @@ class EnrollmentService
                 $phoneNumber,
                 "You don't have any active enrollments yet.\n\nBrowse our events and courses to get started!"
             );
+
             return;
         }
 
@@ -329,7 +436,7 @@ class EnrollmentService
             $message .= "🎓 *{$event->title}*\n";
             $message .= "📂 {$event->category->name}\n";
             $message .= "📅 Enrolled: {$enrollment->enrollment_date->format('M d, Y')}\n";
-            $message .= "Status: " . ucfirst($enrollment->status) . "\n";
+            $message .= 'Status: '.ucfirst($enrollment->status)."\n";
 
             if ($event->type === 'course' && $event->schedules->isNotEmpty()) {
                 $nextSession = $event->schedules()->where('start_date', '>=', now())->first();
@@ -341,7 +448,7 @@ class EnrollmentService
             $message .= "\n";
         }
 
-        $message .= "To view more details, browse to the specific event/course.";
+        $message .= 'To view more details, browse to the specific event/course.';
 
         $this->whatsapp->sendTextMessage($phoneNumber, $message);
 

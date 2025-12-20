@@ -3,8 +3,8 @@
 namespace App\Jobs;
 
 use App\Models\Payment;
-use App\Services\Payment\PesePayService;
 use App\Services\Chatbot\EnrollmentService;
+use App\Services\Payment\PesePayService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -17,7 +17,9 @@ class CheckPaymentStatus implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $payment;
+
     public $tries = 10;
+
     public $backoff = 3; // seconds between retries
 
     /**
@@ -42,6 +44,7 @@ class CheckPaymentStatus implements ShouldQueue
                 'payment_id' => $this->payment->id,
                 'status' => $this->payment->status,
             ]);
+
             return;
         }
 
@@ -99,21 +102,22 @@ class CheckPaymentStatus implements ShouldQueue
             $enrollmentService->handleFailedPayment($this->payment);
 
         } else {
-            // Still pending, retry if attempts remaining
+            // Still pending - update status and complete job gracefully
+            Log::info('Payment still pending', [
+                'payment_id' => $this->payment->id,
+                'reference' => $this->payment->reference_number,
+                'attempt' => $this->attempts(),
+            ]);
+
+            // Update status to processing if still pending
+            if ($this->payment->status === 'pending') {
+                $this->payment->update(['status' => 'processing']);
+            }
+
+            // Schedule another check if we haven't exhausted attempts
             if ($this->attempts() < $this->tries) {
-                Log::info('Payment still pending, will retry', [
-                    'payment_id' => $this->payment->id,
-                    'attempt' => $this->attempts(),
-                    'max_tries' => $this->tries,
-                ]);
-
-                // Update status to processing
-                if ($this->payment->status === 'pending') {
-                    $this->payment->update(['status' => 'processing']);
-                }
-
-                // Re-throw to trigger retry
-                throw new \Exception('Payment still pending, retrying...');
+                // Schedule next check in 10 seconds
+                CheckPaymentStatus::dispatch($this->payment)->delay(now()->addSeconds(10));
             } else {
                 // Max retries exhausted
                 Log::warning('Payment status check timeout', [
@@ -122,7 +126,7 @@ class CheckPaymentStatus implements ShouldQueue
                     'attempts' => $this->attempts(),
                 ]);
 
-                // Keep as pending, but notify user
+                // Update payment with timeout flag
                 $this->payment->update([
                     'pesepay_response' => array_merge(
                         $this->payment->pesepay_response ?? [],
@@ -153,7 +157,7 @@ class CheckPaymentStatus implements ShouldQueue
             $message .= "Amount: \${$this->payment->amount}\n\n";
             $message .= "If you've completed the payment, it may take a few more minutes to reflect.\n\n";
             $message .= "If you're experiencing issues, please contact support:\n";
-            $message .= "📧 support@hustleprenureacademy.com";
+            $message .= '📧 support@hustleprenureacademy.com';
 
             $whatsapp->sendTextMessage($this->payment->phone_number, $message);
         } catch (\Exception $e) {

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Event extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'title',
@@ -37,6 +38,7 @@ class Event extends Model
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
         'published_at' => 'datetime',
+        'start_date' => 'date',
     ];
 
     /**
@@ -144,5 +146,34 @@ class Event extends Model
     public function scopeUpcoming($query)
     {
         return $query->where('published_at', '>', now());
+    }
+
+    /**
+     * Scope available events (not sold out and not past)
+     */
+    public function scopeAvailable($query)
+    {
+        return $query->where(function ($q) {
+            // Check capacity: spots remaining
+            $q->whereNull('capacity')  // No capacity limit, always available
+                ->orWhereRaw('capacity > (
+                    SELECT COUNT(*) FROM enrollments
+                    WHERE enrollments.event_id = events.id
+                    AND enrollments.status IN (?, ?)
+                )', ['confirmed', 'completed']);
+        })->where(function ($q) {
+            // Check date: not in the past
+            $q->where(function ($eventQuery) {
+                // Single events: check published_at date (used as event date)
+                $eventQuery->where('type', 'event')
+                    ->whereDate('published_at', '>=', now()->toDateString());
+            })->orWhere(function ($courseQuery) {
+                // Courses: check if they have future sessions
+                $courseQuery->where('type', 'course')
+                    ->whereHas('schedules', function ($scheduleQuery) {
+                        $scheduleQuery->whereDate('start_date', '>=', now()->toDateString());
+                    });
+            });
+        });
     }
 }

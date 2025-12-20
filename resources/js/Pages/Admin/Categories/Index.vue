@@ -7,13 +7,13 @@
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Categories</h1>
           <p class="text-gray-600 dark:text-gray-400 mt-1">Manage event and course categories</p>
         </div>
-        <Link
-          :href="route('admin.categories.create')"
+        <button
+          @click="showCreateModal = true"
           class="px-4 py-2 bg-gradient-to-r from-[#b30d4f] to-[#8b0a3d] text-white font-semibold rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center gap-2"
         >
           <i class="fas fa-plus"></i>
           Create Category
-        </Link>
+        </button>
       </div>
 
       <!-- Stats Cards -->
@@ -81,10 +81,8 @@
             <thead class="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-700">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Name</th>
-                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Type</th>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Items</th>
                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Display Order</th>
                 <th class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -102,16 +100,6 @@
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span v-if="category.type === 'event'" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                    <i class="fas fa-calendar mr-1"></i>
-                    Event
-                  </span>
-                  <span v-else class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
-                    <i class="fas fa-book mr-1"></i>
-                    Course
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200">
                     {{ category.events_count || 0 }} items
                   </span>
@@ -125,9 +113,6 @@
                     <i class="fas fa-times-circle mr-1"></i>
                     Inactive
                   </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                  {{ category.display_order }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div class="flex items-center justify-end gap-2">
@@ -159,32 +144,99 @@
           </div>
           <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No categories yet</h3>
           <p class="text-gray-600 dark:text-gray-400 mb-4">Get started by creating your first category</p>
-          <Link
-            :href="route('admin.categories.create')"
+          <button
+            @click="showCreateModal = true"
             class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#b30d4f] to-[#8b0a3d] text-white font-semibold rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200"
           >
             <i class="fas fa-plus"></i>
             Create Category
-          </Link>
+          </button>
         </div>
       </div>
     </div>
+
+    <!-- Create Category Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showCreateModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        @click.self="closeCreateModal"
+      >
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Create Category</h2>
+            <button
+              @click="closeCreateModal"
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <!-- Modal Form -->
+          <form @submit.prevent="createCategory" class="p-6 space-y-4">
+            <!-- Name -->
+            <div>
+              <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Category Name <span class="text-red-500">*</span>
+              </label>
+              <input
+                id="name"
+                v-model="form.name"
+                type="text"
+                required
+                class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[#b30d4f] dark:focus:ring-[#e0156b] focus:border-transparent bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
+                placeholder="e.g., Business, Technology, Marketing"
+              />
+              <p v-if="form.errors.name" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.errors.name }}</p>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-3 pt-4">
+              <button
+                type="button"
+                @click="closeCreateModal"
+                class="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="form.processing"
+                class="px-6 py-2 bg-gradient-to-r from-[#b30d4f] to-[#8b0a3d] text-white font-semibold rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                <span v-if="form.processing">
+                  <i class="fas fa-spinner fa-spin mr-2"></i>
+                  Creating...
+                </span>
+                <span v-else>
+                  <i class="fas fa-save mr-2"></i>
+                  Create
+                </span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
   </AdminLayout>
 </template>
 
 <script setup lang="ts">
-import { Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 interface Category {
   id: number;
   name: string;
   slug: string;
-  type: 'event' | 'course';
+  type?: 'event' | 'course';
   description?: string;
   icon?: string;
   is_active: boolean;
-  display_order: number;
+  display_order?: number;
   events_count?: number;
 }
 
@@ -199,6 +251,27 @@ defineProps<{
   categories: Category[];
   stats: Stats;
 }>();
+
+const showCreateModal = ref(false);
+
+const form = useForm({
+  name: '',
+  is_active: true,
+});
+
+const createCategory = () => {
+  form.post(route('admin.categories.store'), {
+    onSuccess: () => {
+      closeCreateModal();
+    },
+  });
+};
+
+const closeCreateModal = () => {
+  showCreateModal.value = false;
+  form.reset();
+  form.clearErrors();
+};
 
 const deleteCategory = (category: Category) => {
   if (category.events_count && category.events_count > 0) {
