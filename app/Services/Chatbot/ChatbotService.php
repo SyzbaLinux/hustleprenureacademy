@@ -209,11 +209,25 @@ class ChatbotService
      */
     private function handleTextMessage(string $phoneNumber, string $text): void
     {
-        $text = trim(strtolower($text));
+        $originalText = trim($text);
+        $text = strtolower($originalText);
 
         // Get current flow state
         $flow = $this->flowManager->getCurrentFlow($phoneNumber);
         $currentState = $flow?->current_state ?? 'idle';
+
+        // Handle registration states first (need original case-sensitive text)
+        if ($currentState === 'registration_name') {
+            $this->handleFullNameInput($phoneNumber, $originalText);
+
+            return;
+        }
+
+        if ($currentState === 'registration_email') {
+            $this->handleEmailInput($phoneNumber, $originalText);
+
+            return;
+        }
 
         // Handle global commands - exact matches
         if (in_array($text, ['menu', 'start'])) {
@@ -226,6 +240,17 @@ class ChatbotService
         $greetings = ['hi', 'hie', 'hello', 'hey', 'hola', 'good morning', 'good afternoon', 'good evening'];
         foreach ($greetings as $greeting) {
             if (str_starts_with($text, $greeting)) {
+                // Check if user exists by phone number
+                $user = \App\Models\User::where('phone_number', $phoneNumber)->first();
+
+                if (! $user) {
+                    // Start registration flow - ask for full name
+                    $this->startRegistrationFlow($phoneNumber);
+
+                    return;
+                }
+
+                // Existing user - show main menu
                 $this->showMainMenu($phoneNumber);
 
                 return;
@@ -522,5 +547,153 @@ class ChatbotService
         // Show main menu after welcome
         sleep(2);
         $this->showMainMenu($phoneNumber);
+    }
+
+    /**
+     * Start registration flow for new user
+     */
+    private function startRegistrationFlow(string $phoneNumber): void
+    {
+        $message = "👋 *Welcome to Hustleprenure Academy!*\n\n";
+        $message .= "I don't have your details yet. Let me help you create an account.\n\n";
+        $message .= '📝 Please enter your *full name* as it appears on your National ID:';
+
+        $this->whatsapp->sendTextMessage($phoneNumber, $message);
+
+        $this->flowManager->transitionTo($phoneNumber, 'registration_name');
+    }
+
+    /**
+     * Handle full name input during registration
+     */
+    private function handleFullNameInput(string $phoneNumber, string $fullName): void
+    {
+        // Validate full name - should have at least 2 words and only letters/spaces
+        $fullName = trim($fullName);
+
+        // Check if name has at least 2 parts (first and last name)
+        $nameParts = preg_split('/\s+/', $fullName);
+        if (count($nameParts) < 2) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                "Please enter your *full name* (first name and surname) as it appears on your National ID.\n\n".
+                'Example: John Moyo'
+            );
+
+            return;
+        }
+
+        // Check if name contains only valid characters
+        if (! preg_match('/^[a-zA-Z\s\'-]+$/', $fullName)) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                "Please enter a valid name using only letters.\n\n".
+                'Example: John Moyo'
+            );
+
+            return;
+        }
+
+        // Store the name in context and ask for email
+        $this->flowManager->setContext($phoneNumber, 'registration_name', $fullName);
+
+        $message = "Thank you, *{$fullName}*! ✅\n\n";
+        $message .= '📧 Now, please enter your *email address*:';
+
+        $this->whatsapp->sendTextMessage($phoneNumber, $message);
+
+        $this->flowManager->transitionTo($phoneNumber, 'registration_email');
+    }
+
+    /**
+     * Handle email input during registration
+     */
+    private function handleEmailInput(string $phoneNumber, string $email): void
+    {
+        $email = trim(strtolower($email));
+
+        // Validate email format
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                "Please enter a valid email address.\n\n".
+                'Example: john@example.com'
+            );
+
+            return;
+        }
+
+        // Check if email is already in use
+        $existingUser = \App\Models\User::where('email', $email)->first();
+        if ($existingUser) {
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                'This email is already registered. Please enter a different email address.'
+            );
+
+            return;
+        }
+
+        // Get the stored name from context
+        $fullName = $this->flowManager->getContext($phoneNumber, 'registration_name');
+
+        if (! $fullName) {
+            // Something went wrong, restart registration
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                "Something went wrong. Let's start again."
+            );
+            $this->startRegistrationFlow($phoneNumber);
+
+            return;
+        }
+
+        // Create the user account (no password since they'll use OTP)
+        try {
+            $user = \App\Models\User::create([
+                'name' => $fullName,
+                'email' => $email,
+                'phone_number' => $phoneNumber,
+                'password' => '', // No password - OTP authentication
+                'whatsapp_verified' => true,
+                'role' => \App\Enums\UserRole::User,
+            ]);
+
+            // Update last WhatsApp interaction
+            $user->last_whatsapp_interaction = now();
+            $user->whatsapp_verified_at = now();
+            $user->save();
+
+            // Clear the registration context
+            $this->flowManager->clearFlow($phoneNumber);
+
+            // Send welcome message
+            $message = "🎉 *Account Created Successfully!*\n\n";
+            $message .= "Welcome, *{$fullName}*!\n\n";
+            $message .= "Your account has been created with:\n";
+            $message .= "📧 Email: {$email}\n";
+            $message .= "📱 Phone: {$phoneNumber}\n\n";
+            $message .= "You're all set! Let me show you what we have available...";
+
+            $this->whatsapp->sendTextMessage($phoneNumber, $message);
+
+            // Show main menu after a short delay
+            sleep(2);
+            $this->showMainMenu($phoneNumber);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('User registration failed', [
+                'phone' => $phoneNumber,
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->whatsapp->sendTextMessage(
+                $phoneNumber,
+                'Sorry, there was an error creating your account. Please try again later or contact support.'
+            );
+
+            $this->flowManager->clearFlow($phoneNumber);
+        }
     }
 }
