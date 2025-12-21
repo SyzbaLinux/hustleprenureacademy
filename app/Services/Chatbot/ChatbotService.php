@@ -104,8 +104,6 @@ class ChatbotService
             return;
         }
 
-        Log::info('Button clicked', ['phone' => $phoneNumber, 'button_id' => $buttonId]);
-
         // Parse button ID format: {action}_{entity}_{id}
         $parts = explode('_', $buttonId);
         $action = $parts[0] ?? null;
@@ -181,8 +179,6 @@ class ChatbotService
         if (! $listId) {
             return;
         }
-
-        Log::info('List item selected', ['phone' => $phoneNumber, 'list_id' => $listId]);
 
         // Parse list ID format: {action}_{entity}_{id}
         $parts = explode('_', $listId);

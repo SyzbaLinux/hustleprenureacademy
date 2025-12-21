@@ -15,19 +15,23 @@ class SendWhatsAppMessage implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $phoneNumber;
+
     public $message;
+
     public $messageType;
+
     public $additionalData;
+
     public $tries = 3;
+
     public $backoff = 10; // seconds between retries
 
     /**
      * Create a new job instance.
      *
-     * @param string $phoneNumber
-     * @param string|array $message
-     * @param string $messageType - 'text', 'buttons', 'list'
-     * @param array $additionalData - Additional data for buttons/lists
+     * @param  string|array  $message
+     * @param  string  $messageType  - 'text', 'buttons', 'list'
+     * @param  array  $additionalData  - Additional data for buttons/lists
      */
     public function __construct(
         string $phoneNumber,
@@ -46,12 +50,6 @@ class SendWhatsAppMessage implements ShouldQueue
      */
     public function handle(WhatsAppService $whatsapp): void
     {
-        Log::info('Sending WhatsApp message', [
-            'phone' => $this->phoneNumber,
-            'type' => $this->messageType,
-            'attempt' => $this->attempts(),
-        ]);
-
         try {
             $response = [];
 
@@ -90,12 +88,7 @@ class SendWhatsAppMessage implements ShouldQueue
                     throw new \Exception("Unsupported message type: {$this->messageType}");
             }
 
-            if ($response['success']) {
-                Log::info('WhatsApp message sent successfully', [
-                    'phone' => $this->phoneNumber,
-                    'message_id' => $response['message_id'] ?? null,
-                ]);
-            } else {
+            if (! $response['success']) {
                 throw new \Exception($response['error'] ?? 'Failed to send message');
             }
         } catch (\Exception $e) {

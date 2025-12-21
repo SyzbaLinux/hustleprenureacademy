@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Webhooks;
 
 use App\Http\Controllers\Controller;
-use App\Models\Otp;
 use App\Jobs\ProcessWhatsAppWebhook;
+use App\Models\Otp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -85,15 +85,7 @@ class WhatsAppWebhookController extends Controller
             $statusType = $status['status']; // sent, delivered, read, failed
             $phoneNumber = $status['recipient_id'] ?? null;
 
-            Log::info('WhatsApp message status update', [
-                'message_id' => $messageId,
-                'status' => $statusType,
-                'phone_number' => $phoneNumber,
-            ]);
-
-            // You can update your message log/delivery status here
-            // For now, just log it
-
+            // Status updates are processed silently
             return response('OK', 200);
 
         } catch (\Exception $e) {
@@ -116,12 +108,6 @@ class WhatsAppWebhookController extends Controller
             $messageId = $message['id'];
             $type = $message['type']; // text, image, document, etc.
 
-            Log::info('WhatsApp message received', [
-                'phone_number' => $phoneNumber,
-                'message_id' => $messageId,
-                'type' => $type,
-            ]);
-
             $isOTPMessage = false;
 
             // Check if it's an OTP message (text with 6 digits)
@@ -143,14 +129,9 @@ class WhatsAppWebhookController extends Controller
             }
 
             // If not an OTP message, route to chatbot
-            if (!$isOTPMessage) {
+            if (! $isOTPMessage) {
                 // Queue webhook processing to avoid blocking response
                 ProcessWhatsAppWebhook::dispatch($data);
-
-                Log::info('WhatsApp message queued for chatbot processing', [
-                    'phone_number' => $phoneNumber,
-                    'message_id' => $messageId,
-                ]);
             }
 
             return response('OK', 200);
@@ -175,12 +156,7 @@ class WhatsAppWebhookController extends Controller
             $otp = Otp::verify($phoneNumber, $otpCode, 'login');
 
             if ($otp) {
-                Log::info('OTP verified from WhatsApp message', [
-                    'phone_number' => $phoneNumber,
-                    'otp_id' => $otp->id,
-                ]);
-
-                // Optional: Send confirmation message
+                // Send confirmation message
                 $this->sendConfirmationMessage($phoneNumber, 'Your identity has been verified! You can close this window.');
 
                 return true;
@@ -205,13 +181,13 @@ class WhatsAppWebhookController extends Controller
     {
         try {
             $response = \Illuminate\Support\Facades\Http::withToken(env('GRAPH_API_TOKEN'))
-                ->post('https://graph.facebook.com/v22.0/' . env('BUSINESS_PHONE_NUMBER_ID') . '/messages', [
+                ->post('https://graph.facebook.com/v22.0/'.env('BUSINESS_PHONE_NUMBER_ID').'/messages', [
                     'messaging_product' => 'whatsapp',
                     'status' => 'read',
                     'message_id' => $messageId,
                 ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::warning('Failed to mark WhatsApp message as read', [
                     'message_id' => $messageId,
                     'status' => $response->status(),
@@ -233,7 +209,7 @@ class WhatsAppWebhookController extends Controller
     {
         try {
             $response = \Illuminate\Support\Facades\Http::withToken(env('GRAPH_API_TOKEN'))
-                ->post('https://graph.facebook.com/v22.0/' . env('BUSINESS_PHONE_NUMBER_ID') . '/messages', [
+                ->post('https://graph.facebook.com/v22.0/'.env('BUSINESS_PHONE_NUMBER_ID').'/messages', [
                     'messaging_product' => 'whatsapp',
                     'to' => $phoneNumber,
                     'type' => 'text',
@@ -241,12 +217,6 @@ class WhatsAppWebhookController extends Controller
                         'body' => $message,
                     ],
                 ]);
-
-            if ($response->successful()) {
-                Log::info('Confirmation message sent', [
-                    'phone_number' => $phoneNumber,
-                ]);
-            }
 
         } catch (\Exception $e) {
             Log::error('Error sending confirmation message', [

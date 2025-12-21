@@ -15,7 +15,9 @@ class ProcessWhatsAppWebhook implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $webhookData;
+
     public $tries = 2;
+
     public $timeout = 60; // seconds
 
     /**
@@ -71,18 +73,8 @@ class ProcessWhatsAppWebhook implements ShouldQueue
 
         // Skip unsupported message types
         if (in_array($messageType, ['audio', 'document', 'image', 'video', 'sticker', 'location', 'contacts'])) {
-            Log::info('Skipping unsupported message type', [
-                'type' => $messageType,
-                'from' => $message['from'] ?? null,
-            ]);
             return;
         }
-
-        Log::info('Processing message', [
-            'type' => $messageType,
-            'from' => $message['from'] ?? null,
-            'message_id' => $message['id'] ?? null,
-        ]);
 
         try {
             $chatbot->handleIncomingMessage($message);
@@ -102,14 +94,8 @@ class ProcessWhatsAppWebhook implements ShouldQueue
      */
     private function processStatus(array $status): void
     {
-        Log::debug('Message status update', [
-            'message_id' => $status['id'] ?? null,
-            'status' => $status['status'] ?? null,
-            'recipient' => $status['recipient_id'] ?? null,
-        ]);
-
-        // You can add logic here to track message delivery/read status
-        // For now, just log it
+        // Status updates (delivery, read receipts) are processed silently
+        // Add tracking logic here if needed in the future
     }
 
     /**
