@@ -91,12 +91,7 @@ class WhatsAppService
                     'interactive' => $interactive,
                 ]);
 
-            if ($response->successful()) {
-                Log::info('WhatsApp interactive buttons sent', [
-                    'to' => $to,
-                    'message_id' => $response->json('messages.0.id'),
-                ]);
-            } else {
+            if (! $response->successful()) {
                 Log::error('WhatsApp interactive buttons failed', [
                     'to' => $to,
                     'status' => $response->status(),
