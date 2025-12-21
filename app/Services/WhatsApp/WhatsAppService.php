@@ -36,12 +36,7 @@ class WhatsAppService
                     ],
                 ]);
 
-            if ($response->successful()) {
-                Log::info('WhatsApp text message sent', [
-                    'to' => $to,
-                    'message_id' => $response->json('messages.0.id'),
-                ]);
-            } else {
+            if (! $response->successful()) {
                 Log::error('WhatsApp text message failed', [
                     'to' => $to,
                     'status' => $response->status(),
