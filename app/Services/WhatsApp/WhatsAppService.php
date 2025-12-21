@@ -143,12 +143,7 @@ class WhatsAppService
                     'interactive' => $interactive,
                 ]);
 
-            if ($response->successful()) {
-                Log::info('WhatsApp interactive list sent', [
-                    'to' => $to,
-                    'message_id' => $response->json('messages.0.id'),
-                ]);
-            } else {
+            if (! $response->successful()) {
                 Log::error('WhatsApp interactive list failed', [
                     'to' => $to,
                     'status' => $response->status(),
@@ -195,12 +190,7 @@ class WhatsAppService
             $response = Http::withToken($this->graphApiToken)
                 ->post($this->getApiUrl().'/messages', $payload);
 
-            if ($response->successful()) {
-                Log::info('WhatsApp image message sent', [
-                    'to' => $to,
-                    'message_id' => $response->json('messages.0.id'),
-                ]);
-            } else {
+            if (! $response->successful()) {
                 Log::error('WhatsApp image message failed', [
                     'to' => $to,
                     'status' => $response->status(),

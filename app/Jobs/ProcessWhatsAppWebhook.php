@@ -31,10 +31,6 @@ class ProcessWhatsAppWebhook implements ShouldQueue
      */
     public function handle(ChatbotService $chatbot): void
     {
-        Log::info('Processing WhatsApp webhook', [
-            'entry_count' => count($this->webhookData['entry'] ?? []),
-        ]);
-
         try {
             // Process each entry
             foreach ($this->webhookData['entry'] ?? [] as $entry) {
